@@ -1,0 +1,2 @@
+clearvars;
+robot = getRobot();
