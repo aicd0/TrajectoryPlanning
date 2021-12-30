@@ -18,4 +18,9 @@ robot_config = config;
 robot_pos = getPos(robot, robot_config);
 
 % Output states.
-state = {robot_config; robot_pos; targ_pos; obstacle_pos; is_colliding};
+clearvars state;
+state.config = robot_config;
+state.achieved = robot_pos;
+state.target = targ_pos;
+state.obstacle = obstacle_pos;
+state.collide = is_colliding;

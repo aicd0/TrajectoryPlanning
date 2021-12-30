@@ -1,6 +1,6 @@
 import matlab.engine
 
-class EngineConnector():
+class Connector():
     def __init__(self) -> None:
         self.__engine = None
 
