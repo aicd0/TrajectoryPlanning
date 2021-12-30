@@ -1,26 +1,20 @@
-action = [1; -2; 3; -4];
-
 for i=1 : size(action, 1)
-    action(i) = max(-1, min(1, action(i)));
+    action(i) = max(-1, min(1, action(i))); %#ok<SAGROW>
 end
 
-action = action * 0.01;
-config = robot_config + action;
+action = action * 0.09;
+config = st_config + action;
 
 % Update colliding.
-is_colliding = checkCollision(robot, robot_config, obstacles);
-is_colliding = any(is_colliding);
+st_collision = checkCollision(robot, config, obstacles);
 
 % Update robot config.
-robot_config = config;
+if ~st_collision
+    st_config = config;
+end
 
 % Update robot pos.
-robot_pos = getPos(robot, robot_config);
+st_achieved = getPos(robot, st_config);
 
-% Output states.
-clearvars state;
-state.config = robot_config;
-state.achieved = robot_pos;
-state.target = targ_pos;
-state.obstacle = obstacle_pos;
-state.collide = is_colliding;
+% Update state.
+updateState;

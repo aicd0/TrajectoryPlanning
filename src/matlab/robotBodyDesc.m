@@ -6,18 +6,18 @@ classdef robotBodyDesc
         Theta
         Type
         DH
-        Collide
+        Collision
         Limits
     end
 
     methods
-        function obj = robotBodyDesc(a, alpha, d, theta, type, limits, collide)
+        function obj = robotBodyDesc(a, alpha, d, theta, type, limits, collision)
             obj.A = a;
             obj.Alpha = alpha;
             obj.D = d;
             obj.Theta = theta;
             obj.Type = type;
-            obj.Collide = collide;
+            obj.Collision = collision;
             obj.Limits = limits;
         end
 

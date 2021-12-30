@@ -30,7 +30,7 @@ function robot = getRobot
         bodies{i}.Joint = joints{i};
     
         % Add collisions.
-        if desc(i).Collide
+        if desc(i).Collision
             length = desc(i).A;
             tform = axang2tform([0 1 0 pi/2]) * trvec2tform([0 0 -length/2]);
             addCollision(bodies{i}, "cylinder", [0.05 length - 0.05], tform);
