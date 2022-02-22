@@ -10,19 +10,19 @@ class GameState:
         self.stage_over = False
         self.game_over = False
 
-        # Reset the game on self-collision.
+        # On self-collision.
         if next_state.self_collision:
             self.reward = -100.
             self.game_over = True
             return
 
-        # Reset the stage on world-collision.
+        # On world-collision.
         if next_state.world_collision:
             self.reward = -100.
-            self.stage_over = True
+            self.game_over = True
             return
 
-        # Reset the stage if the goal was achieved.
+        # On goal achieved.
         d2 = np.square(next_state.achieved - next_state.desired).sum()
 
         if d2 < self.max_d2:

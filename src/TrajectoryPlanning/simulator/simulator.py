@@ -8,18 +8,18 @@ def __state(eng) -> State:
     return state
 
 def initialize(eng) -> None:
-    eng.sim_initialize(nargout=0)
+    eng.simInitialize(nargout=0)
 
 def reset(eng) -> State:
-    eng.sim_reset(nargout=0)
+    eng.simReset(nargout=0)
     return __state(eng)
 
 def step(eng, action) -> State:
     action = action[:, np.newaxis].tolist() # row order
     eng.workspace['action'] = matlab.double(action)
-    eng.sim_step(nargout=0)
+    eng.simStep(nargout=0)
     return __state(eng)
 
 def stage(eng) -> State:
-    eng.sim_stage(nargout=0)
+    eng.simStage(nargout=0)
     return __state(eng)

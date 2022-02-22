@@ -76,14 +76,17 @@ class Agent:
 
         return action
 
-    def learn(self):
+    def learn(self, iters):
         assert len(self.replay_buffer) >= config.DDPG.BatchSize
 
-        iters = config.DDPG.Iterations
         critic_loss_sum = 0.
         actor_loss_sum = 0.
 
-        for _ in range(iters):
+        test_period = 200
+        critic_loss_period = 0.
+        actor_loss_period = 0.
+
+        for i in range(iters):
             # Sample BatchSize transitions from replay buffer for optimization.
             sampled_trans = self.replay_buffer.sample(config.DDPG.BatchSize)
 
@@ -100,12 +103,11 @@ class Agent:
             next_states = torch.tensor(next_states, dtype=config.TorchDType)
 
             # Optimize critic network.
-            next_actions_pred = self.actor_targ(next_states)
-            next_q_pred = self.critic_targ(next_states, next_actions_pred)
-            q_expect = rewards + config.DDPG.Gamma * next_q_pred
+            next_actions_targ = self.actor_targ(next_states)
+            next_q_targ = self.critic_targ(next_states, next_actions_targ)
+            q_targ = rewards + config.DDPG.Gamma * next_q_targ
             q_pred = self.critic(states, actions)
-            critic_loss = self.critic_loss(q_pred, q_expect)
-            critic_loss_sum += critic_loss.item()
+            critic_loss = self.critic_loss(q_pred, q_targ)
 
             self.critic_optim.zero_grad()
             critic_loss.backward()
@@ -113,27 +115,40 @@ class Agent:
 
             # Optimize actor network.
             actions_pred = self.actor(states)
-            q_pred_2 = self.critic(states, actions_pred)
-            actor_loss = -torch.mean(q_pred_2)
-            actor_loss_sum += actor_loss.item()
+            actor_q_pred = self.critic(states, actions_pred)
+            actor_loss = -torch.mean(actor_q_pred)
 
             self.actor_optim.zero_grad()
             actor_loss.backward()
             self.actor_optim.step()
 
-            # Stop on error.
-            if math.isnan(critic_loss_sum + actor_loss_sum):
-                raise RuntimeError()
-
             # Update target networks.
             Tau = config.DDPG.Tau
-            TauN = 1 - Tau
+            Tau_ = 1 - Tau
 
             for p, pt in zip(self.critic.parameters(), self.critic_targ.parameters()):
-                pt.data = p.data * Tau + pt.data * TauN
+                pt.data = p.data * Tau + pt.data * Tau_
                 
             for p, pt in zip(self.actor.parameters(), self.actor_targ.parameters()):
-                pt.data = p.data * Tau + pt.data * TauN
-        
+                pt.data = p.data * Tau + pt.data * Tau_
+
+            # Statistics.
+            critic_loss_val = critic_loss.item()
+            actor_loss_val = actor_loss.item()
+            critic_loss_sum += critic_loss_val
+            actor_loss_sum += actor_loss_val
+            critic_loss_period += critic_loss_val
+            actor_loss_period += actor_loss_val
+
+            if math.isnan(critic_loss_period) or math.isnan(actor_loss_period):
+                raise RuntimeError()
+
+            if (i + 1) % test_period == 0:
+                c_loss = critic_loss_period / test_period
+                a_loss = actor_loss_period / test_period
+                print('C|A: %f\t%f\r' % (c_loss, a_loss), end='')
+                critic_loss_period = 0.
+                actor_loss_period = 0.
+
         print('Critic loss: %f' % (critic_loss_sum / iters))
         print('Actor loss: %f' % (actor_loss_sum / iters))

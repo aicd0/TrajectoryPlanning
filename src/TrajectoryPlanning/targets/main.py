@@ -1,6 +1,7 @@
 import config
 import random
 import simulator.simulator as sim
+import time
 from copy import copy
 from framework.ddpg import Agent, Transition
 from framework.game import GameState
@@ -31,7 +32,7 @@ def augment_replay_buffer(agent: Agent, replay_buffer: list[Transition], game: G
 def main():
     # Attach to a running session.
     connector = Connector()
-    assert connector.connect(config.SessionName)
+    assert connector.connect()
     eng = connector.engine()
 
     # Initialize simulator.
@@ -59,8 +60,9 @@ def main():
 
         # Logging.
         total_reward = 0
+        last_update_time = time.time()
 
-        for _ in range(config.DDPG.MaxStep):
+        for step in range(config.DDPG.MaxStep):
             # Sample an action.
             action = agent.sample_action(state)
 
@@ -82,6 +84,10 @@ def main():
                 next_state = sim.stage(eng)
 
             state = next_state
+
+            if time.time() - last_update_time > 1:
+                print('Step %d\r' % step, end='')
+                last_update_time = time.time()
         
         print('Total reward: %d' % total_reward)
         
@@ -90,4 +96,4 @@ def main():
             augment_replay_buffer(agent, replay_buffer, game)
         
         # Optimize agent.
-        agent.learn()
+        agent.learn(config.DDPG.Iterations)

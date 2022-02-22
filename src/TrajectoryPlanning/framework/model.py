@@ -5,9 +5,9 @@ import torch.nn.functional as F
 class Critic(nn.Module):
     def __init__(self, dim_state, dim_action):
         super(Critic, self).__init__()
-        self.fc1 = nn.Linear(dim_state + dim_action, 100)
-        self.fc2 = nn.Linear(100, 100)
-        self.fc3 = nn.Linear(100, 1)
+        self.fc1 = nn.Linear(dim_state + dim_action, 300)
+        self.fc2 = nn.Linear(300, 600)
+        self.fc3 = nn.Linear(600, 1)
 
     def forward(self, states, actions):
         x = torch.cat((states, actions), 1)
