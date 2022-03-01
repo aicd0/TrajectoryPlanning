@@ -1,25 +1,54 @@
 import matlab
 import numpy as np
 from framework.state import State
+from simulator.engine import Connector
 
-def __state(eng) -> State:
-    state = State()
-    state.from_matlab(eng.workspace['state'])
-    return state
+class Simulator:
+    def __init__(self):
+        # Attach to a running session.
+        connector = Connector()
+        assert connector.connect()
+        self.eng = connector.engine()
 
-def initialize(eng) -> None:
-    eng.simInitialize(nargout=0)
+        # Robot initialization.
+        self.eng.simInit(nargout=0)
 
-def reset(eng) -> State:
-    eng.simReset(nargout=0)
-    return __state(eng)
+        # Plot initialization.
+        self.__plot_initialized = False
+        self.__plot_reset = False
 
-def step(eng, action) -> State:
-    action = action[:, np.newaxis].tolist() # row order
-    eng.workspace['action'] = matlab.double(action)
-    eng.simStep(nargout=0)
-    return __state(eng)
+    def __state(self) -> State:
+        state = State()
+        state.from_matlab(self.eng.workspace['state'])
+        return state
 
-def stage(eng) -> State:
-    eng.simStage(nargout=0)
-    return __state(eng)
+    def reset(self) -> State:
+        self.eng.simReset(nargout=0)
+        return self.__state()
+
+    def step(self, action) -> State:
+        action = action[:, np.newaxis].tolist() # row order
+        self.eng.workspace['action'] = matlab.double(action)
+        self.eng.simStep(nargout=0)
+        return self.__state()
+
+    def stage(self) -> State:
+        self.eng.simStage(nargout=0)
+        return self.__state()
+
+    def __plot_init(self) -> None:
+        assert not self.__plot_initialized
+        self.eng.simPlotInit(nargout=0)
+        self.__plot_initialized = True
+
+    def plot_reset(self) -> None:
+        if not self.__plot_initialized:
+            self.__plot_init()
+        self.eng.simPlotReset(nargout=0)
+
+    def plot_step(self) -> None:
+        if not self.__plot_initialized:
+            self.__plot_init()
+            self.plot_reset()
+        self.eng.simPlotStep(nargout=0)
+        

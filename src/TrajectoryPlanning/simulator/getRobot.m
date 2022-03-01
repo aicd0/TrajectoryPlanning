@@ -1,12 +1,10 @@
 function robot = getRobot
-    joint_limit = [-80 80]*pi/180;
-
     % DH params
     desc = [
-        robotBodyDesc(0  , pi/2, 0, 0 , "revolute", [-pi pi], false)
-        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", joint_limit, true)
-        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", joint_limit, true)
-        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", joint_limit, true)
+        robotBodyDesc(0  , pi/2, 0, 0 , "revolute", [-180 180]*pi/180, false)
+        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", [   0  90]*pi/180, true)
+        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", [ -90   0]*pi/180, true)
+        robotBodyDesc(0.5, 0   , 0, 0 , "revolute", [ -90   0]*pi/180, true)
     ];
     
     % Assemble the robot.

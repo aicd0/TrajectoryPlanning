@@ -1,11 +1,10 @@
 import config
 import random
-import simulator.simulator as sim
 import time
 from copy import copy
 from framework.ddpg import Agent, Transition
 from framework.game import GameState
-from simulator.engine import Connector
+from simulator.simulator import Simulator
 
 def augment_replay_buffer(agent: Agent, replay_buffer: list[Transition], game: GameState):
     for i, trans in enumerate(replay_buffer):
@@ -30,16 +29,11 @@ def augment_replay_buffer(agent: Agent, replay_buffer: list[Transition], game: G
             agent.replay_buffer.append(new_trans)
 
 def main():
-    # Attach to a running session.
-    connector = Connector()
-    assert connector.connect()
-    eng = connector.engine()
-
-    # Initialize simulator.
-    sim.initialize(eng)
+    # Initialize the simulator.
+    sim = Simulator()
     
     # Reset simulator to get sizes of states and actions.
-    state = sim.reset(eng)
+    state = sim.reset()
     dim_action = len(state.config)
     dim_state = len(state.as_input)
 
@@ -56,22 +50,23 @@ def main():
         replay_buffer: list[Transition] = []
 
         # Sample an initial state.
-        state = sim.reset(eng)
+        state = sim.reset()
+
+        # Reset game recorder.
+        game.reset()
 
         # Logging.
-        total_reward = 0
         last_update_time = time.time()
 
         for step in range(config.DDPG.MaxStep):
             # Sample an action.
-            action = agent.sample_action(state)
+            action = agent.sample_action(state, noise=True)
 
             # Execute the action.
-            next_state = sim.step(eng, action)
+            next_state = sim.step(action)
 
             # Calculate reward.
             game.update(action, next_state)
-            total_reward += game.reward
 
             # Add to replay buffer.
             trans = Transition(state, action, game.reward, next_state)
@@ -79,9 +74,9 @@ def main():
             replay_buffer.append(trans)
 
             if game.game_over:
-                next_state = sim.reset(eng)
+                next_state = sim.reset()
             elif game.stage_over:
-                next_state = sim.stage(eng)
+                next_state = sim.stage()
 
             state = next_state
 
@@ -89,7 +84,7 @@ def main():
                 print('Step %d\r' % step, end='')
                 last_update_time = time.time()
         
-        print('Total reward: %d' % total_reward)
+        print(game.summary())
         
         # Augment replay buffer.
         if config.HER.Enable:
@@ -97,3 +92,5 @@ def main():
         
         # Optimize agent.
         agent.learn(config.DDPG.Iterations)
+        agent.save(config.CheckpointDir)
+        

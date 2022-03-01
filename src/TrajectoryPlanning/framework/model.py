@@ -33,3 +33,4 @@ class Actor(nn.Module):
         x = self.fc3(x)
         x = torch.tanh(x)
         return x
+        

@@ -1,12 +1,20 @@
 import config
 import math
 import numpy as np
+import os
 import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import utils.fileio
+import utils.string_utils
 from framework.model import Actor, Critic
 from framework.state import State
+
+checkpoint_critic = 'critic'
+checkpoint_actor = 'actor'
+checkpoint_critic_targ = 'critic_targ'
+checkpoint_actor_targ = 'actor_targ'
 
 class Transition:
     def __init__(self, state: State, action: np.ndarray, reward: float, next_state: State) -> None:
@@ -52,6 +60,9 @@ class Agent:
         # Initialize the replay buffer.
         self.replay_buffer = ReplayBuffer(config.DDPG.ReplayBuffer)
 
+        self.__init_model()
+
+    def __init_model(self) -> None:
         # Initialize optimizers.
         self.critic_optim = optim.SGD(self.critic.parameters(), lr=config.DDPG.LRCritic)
         self.actor_optim = optim.SGD(self.actor.parameters(), lr=config.DDPG.LRActor)
@@ -59,16 +70,46 @@ class Agent:
         # Initialize losses.
         self.critic_loss = nn.MSELoss()
 
-    def sample_action(self, state: State):
+    def save(self, path: str) -> None:
+        path = utils.string_utils.to_folder_path(path)
+        utils.fileio.mktree(path)
+        torch.save(self.critic.state_dict(), path + checkpoint_critic)
+        torch.save(self.actor.state_dict(), path + checkpoint_actor)
+        torch.save(self.critic_targ.state_dict(), path + checkpoint_critic_targ)
+        torch.save(self.actor_targ.state_dict(), path + checkpoint_actor_targ)
+
+    def load(self, path: str) -> bool:
+        path = utils.string_utils.to_folder_path(path)
+        checkpoint_critic_path = path + checkpoint_critic
+        checkpoint_actor_path = path + checkpoint_actor
+        checkpoint_critic_targ_path = path + checkpoint_critic_targ
+        checkpoint_actor_targ_path = path + checkpoint_actor_targ
+        if not os.path.exists(checkpoint_critic_path):
+            return False
+        if not os.path.exists(checkpoint_actor_path):
+            return False
+        if not os.path.exists(checkpoint_critic_targ_path):
+            return False
+        if not os.path.exists(checkpoint_actor_targ_path):
+            return False
+        self.critic.load_state_dict(torch.load(checkpoint_critic_path))
+        self.actor.load_state_dict(torch.load(checkpoint_actor_path))
+        self.critic_targ.load_state_dict(torch.load(checkpoint_critic_targ_path))
+        self.actor_targ.load_state_dict(torch.load(checkpoint_actor_targ_path))
+        self.__init_model()
+        return True
+
+    def sample_action(self, state: State, noise: bool):
         # Action prediction from actor.
         state = torch.tensor(state.as_input, dtype=config.TorchDType)
         action_pred = self.actor(state).detach().numpy()
 
-        # Add noise.
-        dim_action = len(action_pred)
-        action_noise = config.DDPG.ActionNoise
-        action_noise = np.random.uniform(-action_noise, action_noise, dim_action)
-        action = np.add(action_pred, action_noise, dtype=config.NumpyDType)
+        if noise:
+            # Add noise.
+            dim_action = len(action_pred)
+            action_noise = config.DDPG.ActionNoise
+            action_noise = np.random.uniform(-action_noise, action_noise, dim_action)
+            action = np.add(action_pred, action_noise, dtype=config.NumpyDType)
         
         # Saturation.
         for i in range(len(action)):
@@ -140,7 +181,7 @@ class Agent:
             critic_loss_period += critic_loss_val
             actor_loss_period += actor_loss_val
 
-            if math.isnan(critic_loss_period) or math.isnan(actor_loss_period):
+            if math.isnan(critic_loss_val) or math.isnan(actor_loss_val):
                 raise RuntimeError()
 
             if (i + 1) % test_period == 0:
@@ -152,3 +193,4 @@ class Agent:
 
         print('Critic loss: %f' % (critic_loss_sum / iters))
         print('Actor loss: %f' % (actor_loss_sum / iters))
+        

@@ -9,6 +9,9 @@ MatlabSessionFile = '../../outputs/MatlabLauncher/session.txt'
 NumpyDType = np.float32
 TorchDType = torch.float32
 
+#  Checkpoint directory
+CheckpointDir = '../../outputs/Checkpoint'
+
 #  Hyperparameters
 class DDPG:
     ActionNoise = 0.1
@@ -23,5 +26,10 @@ class DDPG:
     Tau = 0.001
 
 class HER:
-    Enable = False
+    Enable = True
     K = 8
+
+# Testing
+class Test:
+    MaxStep = 256
+    

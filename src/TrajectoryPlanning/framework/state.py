@@ -16,3 +16,4 @@ class State:
             self.world_collision = bool(collision[1])
 
         self.as_input = np.concatenate((self.config, self.achieved, self.desired), dtype=config.NumpyDType)
+        

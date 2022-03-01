@@ -42,3 +42,4 @@ def to_folder_path(path):
     if len(path) != 0 and path[-1] != '/':
         path += '/'
     return path
+    

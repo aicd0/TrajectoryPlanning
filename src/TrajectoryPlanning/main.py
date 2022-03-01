@@ -1,9 +1,9 @@
-import targets.main
-# import _test.sampler
+import targets.train
+import targets.test
 
 def main():
-    targets.main.main()
-    # _test.sampler.test()
+    targets.train.main()
 
 if __name__ == '__main__':
     main()
+    
