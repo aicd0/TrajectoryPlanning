@@ -6,7 +6,11 @@ from framework.ddpg import Agent, Transition
 from framework.game import GameState
 from simulator.simulator import Simulator
 
-def augment_replay_buffer(agent: Agent, replay_buffer: list[Transition], game: GameState):
+def augment_replay_buffer(replay_buffer: list[Transition]) -> None:
+    augmented_replay_buffer: list[Transition] = []
+    game = GameState()
+    game.reset()
+
     for i, trans in enumerate(replay_buffer):
         # Sample k transitions after this transition as new goals.
         sample_src = replay_buffer[i + 1:]
@@ -24,13 +28,15 @@ def augment_replay_buffer(agent: Agent, replay_buffer: list[Transition], game: G
             new_next_state.from_matlab() # update auto-generated variables.
 
             new_action = trans.action
-            game.update(new_action, new_next_state, test=True)
+            game.update(new_action, new_next_state)
             new_trans = Transition(new_state, new_action, game.reward, new_next_state)
-            agent.replay_buffer.append(new_trans)
+            augmented_replay_buffer.append(new_trans)
+    
+    replay_buffer.extend(augmented_replay_buffer)
 
 def main():
-    # Initialize the simulator.
     sim = Simulator()
+    game = GameState()
     
     # Reset simulator to get sizes of states and actions.
     state = sim.reset()
@@ -39,58 +45,51 @@ def main():
 
     # Initialize the agent.
     agent = Agent(dim_state, dim_action)
-
-    # Initialize the game recorder.
-    game = GameState()
+    agent.try_load(config.CheckpointDir)
 
     for episode in range(1, config.DDPG.MaxEpisode + 1):
         print('========== episode %d ==========' % episode)
-
-        # Initialize replay buffer.
-        replay_buffer: list[Transition] = []
-
-        # Sample an initial state.
-        state = sim.reset()
-
-        # Reset game recorder.
-        game.reset()
-
-        # Logging.
         last_update_time = time.time()
+        step = 0
 
-        for step in range(config.DDPG.MaxStep):
-            # Sample an action.
-            action = agent.sample_action(state, noise=True)
+        while step < config.DDPG.MinSteps:
+            replay_buffer: list[Transition] = []
+            game.reset()
+            state = sim.reset()
 
-            # Execute the action.
-            next_state = sim.step(action)
+            while step < config.DDPG.MinSteps:
+                step += 1
 
-            # Calculate reward.
-            game.update(action, next_state)
+                # Sample and execute the action.
+                action = agent.sample_action(state, noise=config.DDPG.NoiseEnabled)
+                next_state = sim.step(action)
 
-            # Add to replay buffer.
-            trans = Transition(state, action, game.reward, next_state)
-            agent.replay_buffer.append(trans)
-            replay_buffer.append(trans)
+                # Calculate reward and add to replay buffer.
+                game.update(action, next_state)
+                trans = Transition(state, action, game.reward, next_state)
+                replay_buffer.append(trans)
 
-            if game.game_over:
-                next_state = sim.reset()
-            elif game.stage_over:
-                next_state = sim.stage()
+                if game.game_over:
+                    break
+                elif game.stage_over:
+                    next_state = sim.stage()
+                state = next_state
 
-            state = next_state
-
-            if time.time() - last_update_time > 1:
-                print('Step %d\r' % step, end='')
-                last_update_time = time.time()
-        
-        print(game.summary())
-        
-        # Augment replay buffer.
-        if config.HER.Enable:
-            augment_replay_buffer(agent, replay_buffer, game)
+                if time.time() - last_update_time > 1:
+                    print('Step %d\r' % step, end='')
+                    last_update_time = time.time()
+            
+            game.summary()
+            
+            # Augment replay buffer.
+            if config.HER.Enable:
+                augment_replay_buffer(replay_buffer)
+            
+            # Add to agent replay buffer.
+            for trans in replay_buffer:
+                agent.replay_buffer.append(trans)
         
         # Optimize agent.
-        agent.learn(config.DDPG.Iterations)
+        agent.learn()
         agent.save(config.CheckpointDir)
         

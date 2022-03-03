@@ -7,6 +7,7 @@ from simulator.simulator import Simulator
 def main():
     # Initialize the simulator
     sim = Simulator()
+    # sim.eng.simPlotInit(nargout=0)
     
     # Reset simulator to get sizes of states and actions.
     state = sim.reset()
@@ -15,7 +16,7 @@ def main():
 
     # Load the agent from local checkpoints.
     agent = Agent(dim_state, dim_action)
-    agent.load(config.CheckpointDir)
+    agent.try_load(config.CheckpointDir)
 
     # Initialize the game recorder.
     game = GameState()
@@ -31,7 +32,7 @@ def main():
     last_update_time = time.time()
 
     for step in range(1, config.Test.MaxStep + 1):
-        action = agent.sample_action(state, noise=True)
+        action = agent.sample_action(state, noise=config.Test.NoiseEnabled, detach=config.Test.DetachAgent)
         state = sim.step(action)
         sim.plot_step()
 
@@ -39,15 +40,14 @@ def main():
         game.update(action, state)
 
         if game.game_over:
-            print('Collision detected.')
             break
         elif game.stage_over:
-            print('Goal achieved.')
-            break
+            state = sim.stage()
 
         if time.time() - last_update_time > 1:
             print('Step %d\r' % step, end='')
             last_update_time = time.time()
 
-    print('Simulation completed. ' + game.summary())
+    print('Total steps: %d' % step)
+    game.summary()
     

@@ -27,7 +27,7 @@ class ReplayBuffer:
     def __init__(self, size: int) -> None:
         self.__capacity = size
         self.__size = 0
-        self.__buffer = []
+        self.__buffer: list[Transition] = []
         self.__begin = 0
 
     def __len__(self) -> int:
@@ -78,7 +78,7 @@ class Agent:
         torch.save(self.critic_targ.state_dict(), path + checkpoint_critic_targ)
         torch.save(self.actor_targ.state_dict(), path + checkpoint_actor_targ)
 
-    def load(self, path: str) -> bool:
+    def try_load(self, path: str) -> bool:
         path = utils.string_utils.to_folder_path(path)
         checkpoint_critic_path = path + checkpoint_critic
         checkpoint_actor_path = path + checkpoint_actor
@@ -97,19 +97,23 @@ class Agent:
         self.critic_targ.load_state_dict(torch.load(checkpoint_critic_targ_path))
         self.actor_targ.load_state_dict(torch.load(checkpoint_actor_targ_path))
         self.__init_model()
+        print('Agent loaded.')
         return True
 
-    def sample_action(self, state: State, noise: bool):
+    def sample_action(self, state: State, noise: bool, detach: bool = False):
         # Action prediction from actor.
-        state = torch.tensor(state.as_input, dtype=config.TorchDType)
-        action_pred = self.actor(state).detach().numpy()
+        state = torch.tensor(state.as_input, dtype=config.DataType.Torch)
+        if detach:
+            action = np.zeros((1), config.DataType.Numpy)
+        else:
+            action = self.actor(state).detach().numpy()
 
         if noise:
             # Add noise.
-            dim_action = len(action_pred)
-            action_noise = config.DDPG.ActionNoise
+            dim_action = len(action)
+            action_noise = config.DDPG.NoiseAmount
             action_noise = np.random.uniform(-action_noise, action_noise, dim_action)
-            action = np.add(action_pred, action_noise, dtype=config.NumpyDType)
+            action = np.add(action, action_noise, dtype=config.DataType.Numpy)
         
         # Saturation.
         for i in range(len(action)):
@@ -117,7 +121,7 @@ class Agent:
 
         return action
 
-    def learn(self, iters):
+    def learn(self):
         assert len(self.replay_buffer) >= config.DDPG.BatchSize
 
         critic_loss_sum = 0.
@@ -127,21 +131,21 @@ class Agent:
         critic_loss_period = 0.
         actor_loss_period = 0.
 
-        for i in range(iters):
+        for i in range(1, config.DDPG.MaxIterations + 1):
             # Sample BatchSize transitions from replay buffer for optimization.
             sampled_trans = self.replay_buffer.sample(config.DDPG.BatchSize)
 
             # Convert to ndarray.
-            states = np.array([t.state.as_input for t in sampled_trans], dtype=config.NumpyDType)
-            actions = np.array([t.action for t in sampled_trans], dtype=config.NumpyDType)
-            rewards = np.array([t.reward for t in sampled_trans], dtype=config.NumpyDType)[:, np.newaxis]
-            next_states = np.array([t.next_state.as_input for t in sampled_trans], dtype=config.NumpyDType)
+            states = np.array([t.state.as_input for t in sampled_trans], dtype=config.DataType.Numpy)
+            actions = np.array([t.action for t in sampled_trans], dtype=config.DataType.Numpy)
+            rewards = np.array([t.reward for t in sampled_trans], dtype=config.DataType.Numpy)[:, np.newaxis]
+            next_states = np.array([t.next_state.as_input for t in sampled_trans], dtype=config.DataType.Numpy)
 
             # Convert to torch tensor.
-            states = torch.tensor(states, dtype=config.TorchDType)
-            actions = torch.tensor(actions, dtype=config.TorchDType)
-            rewards = torch.tensor(rewards, dtype=config.TorchDType)
-            next_states = torch.tensor(next_states, dtype=config.TorchDType)
+            states = torch.tensor(states, dtype=config.DataType.Torch)
+            actions = torch.tensor(actions, dtype=config.DataType.Torch)
+            rewards = torch.tensor(rewards, dtype=config.DataType.Torch)
+            next_states = torch.tensor(next_states, dtype=config.DataType.Torch)
 
             # Optimize critic network.
             next_actions_targ = self.actor_targ(next_states)
@@ -165,13 +169,12 @@ class Agent:
 
             # Update target networks.
             Tau = config.DDPG.Tau
-            Tau_ = 1 - Tau
 
             for p, pt in zip(self.critic.parameters(), self.critic_targ.parameters()):
-                pt.data = p.data * Tau + pt.data * Tau_
+                pt.data.copy_(p.data * Tau + pt.data * (1 - Tau))
                 
             for p, pt in zip(self.actor.parameters(), self.actor_targ.parameters()):
-                pt.data = p.data * Tau + pt.data * Tau_
+                pt.data.copy_(p.data * Tau + pt.data * (1 - Tau))
 
             # Statistics.
             critic_loss_val = critic_loss.item()
@@ -184,13 +187,13 @@ class Agent:
             if math.isnan(critic_loss_val) or math.isnan(actor_loss_val):
                 raise RuntimeError()
 
-            if (i + 1) % test_period == 0:
+            if i % test_period == 0:
                 c_loss = critic_loss_period / test_period
                 a_loss = actor_loss_period / test_period
-                print('C|A: %f\t%f\r' % (c_loss, a_loss), end='')
+                print('C|A: %.9g %.9g\r' % (c_loss, a_loss), end='')
                 critic_loss_period = 0.
                 actor_loss_period = 0.
 
-        print('Critic loss: %f' % (critic_loss_sum / iters))
-        print('Actor loss: %f' % (actor_loss_sum / iters))
+        print('Critic loss: %f' % (critic_loss_sum / i))
+        print('Actor loss: %f' % (actor_loss_sum / i))
         

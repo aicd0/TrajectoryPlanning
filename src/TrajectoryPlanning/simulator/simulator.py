@@ -26,7 +26,7 @@ class Simulator:
         self.eng.simReset(nargout=0)
         return self.__state()
 
-    def step(self, action) -> State:
+    def step(self, action: np.ndarray) -> State:
         action = action[:, np.newaxis].tolist() # row order
         self.eng.workspace['action'] = matlab.double(action)
         self.eng.simStep(nargout=0)

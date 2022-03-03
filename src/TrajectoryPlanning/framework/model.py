@@ -21,9 +21,9 @@ class Critic(nn.Module):
 class Actor(nn.Module):
     def __init__(self, dim_state, dim_action):
         super(Actor, self).__init__()
-        self.fc1 = nn.Linear(dim_state, 100)
-        self.fc2 = nn.Linear(100, 100)
-        self.fc3 = nn.Linear(100, dim_action)
+        self.fc1 = nn.Linear(dim_state, 300)
+        self.fc2 = nn.Linear(300, 600)
+        self.fc3 = nn.Linear(600, dim_action)
 
     def forward(self, states):
         x = self.fc1(states)

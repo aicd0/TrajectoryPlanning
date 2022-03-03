@@ -1,4 +1,4 @@
-% Reset robot.
+% Reset state.config
 tmp.max_try = 100;
 for i = 1 : tmp.max_try
     state.config = randomConfiguration(robot);
@@ -9,6 +9,7 @@ for i = 1 : tmp.max_try
     assert(i < tmp.max_try);
 end
 
+% Update state.achieved
 state.achieved = getPos(robot, state.config);
 
 % New stage.

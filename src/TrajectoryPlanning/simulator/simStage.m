@@ -1,4 +1,4 @@
-% Update desired.
+% Update state.desired
 tmp.max_try = 100;
 for i = 1 : tmp.max_try
     tmp.config = randomConfiguration(robot);
@@ -10,5 +10,6 @@ for i = 1 : tmp.max_try
     assert(i < tmp.max_try);
 end
 
-% Update collision.
+% Update state.collision & state.deadlock
 state.collision = checkCollision(robot, state.config, obstacles);
+state.deadlock = false;

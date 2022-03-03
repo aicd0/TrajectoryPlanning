@@ -5,31 +5,34 @@ import torch
 MatlabSessionFile = '../../outputs/MatlabLauncher/session.txt'
 
 # Trainning
-#  Data type
-NumpyDType = np.float32
-TorchDType = torch.float32
+class DataType:
+    Numpy = np.float32
+    Torch = torch.float32
 
 #  Checkpoint directory
 CheckpointDir = '../../outputs/Checkpoint'
 
 #  Hyperparameters
 class DDPG:
-    ActionNoise = 0.1
     BatchSize = 32
     Gamma = 0.99
-    Iterations = 256
     LRActor = 0.001
-    LRCritic = 0.001
+    LRCritic = 0.0001
     MaxEpisode = 8192
-    MaxStep = 2048
-    ReplayBuffer = 4096
+    MaxIterations = 2048
+    MinSteps = 512
+    NoiseAmount = 1.0
+    NoiseEnabled = True
+    ReplayBuffer = 8192
     Tau = 0.001
 
 class HER:
-    Enable = True
-    K = 8
+    Enable = False
+    K = 4
 
 # Testing
 class Test:
-    MaxStep = 256
+    DetachAgent = False
+    MaxStep = 512
+    NoiseEnabled = False
     
