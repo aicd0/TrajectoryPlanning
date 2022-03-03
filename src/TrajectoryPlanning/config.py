@@ -9,30 +9,53 @@ class DataType:
     Numpy = np.float32
     Torch = torch.float32
 
-#  Checkpoint directory
-CheckpointDir = '../../outputs/Checkpoint'
+#  Evaluator
+class Evaluator:
+    MaxIterations = 10000
 
-#  Hyperparameters
+# Model
+class Model:
+    ActorHidden1 = 400
+    ActorHidden2 = 300
+    CheckpointDir = '../../outputs/Checkpoint'
+    CriticHidden1 = 400
+    CriticHidden2 = 300
+    InitialWeight = 0.003
+    SaveStepInterval = 1000
+
+#  Hyper-parameters
 class DDPG:
-    BatchSize = 32
+    BatchSize = 64
+    Epsilon = 50000
     Gamma = 0.99
-    LRActor = 0.001
-    LRCritic = 0.0001
-    MaxEpisode = 8192
-    MaxIterations = 2048
-    MinSteps = 512
-    NoiseAmount = 1.0
+    LRActor = 0.0001
+    LRCritic = 0.001
+    MaxEpisodes = 200000
+    MaxIterations = 10000
     NoiseEnabled = True
     ReplayBuffer = 8192
     Tau = 0.001
+    Warmup = 100
+
+    class OUNoise:
+        Mu = 0.0
+        Sigma = 0.2
+        Theta = 0.15
+
+    class UniformNoise:
+        Max = 1.0
+        Min = -1.0
+
+    class Evaluation:
+        MinStepInterval = 2000
+        MaxEpisodes = 20
 
 class HER:
-    Enable = False
-    K = 4
+    Enabled = False
+    K = 8
 
 # Testing
 class Test:
     DetachAgent = False
-    MaxStep = 512
     NoiseEnabled = False
     

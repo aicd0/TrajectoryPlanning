@@ -1,3 +1,3 @@
 # Output
 SessionFile = '../../outputs/MatlabLauncher/session.txt'
-TargetDirectory = '../TrajectoryPlanning/simulator'
+TargetDirectory = '../TrajectoryPlanning/simulator/MATLAB'

@@ -1,7 +1,3 @@
-for i=1 : size(action, 1)
-    action(i) = max(-1, min(1, action(i))); %#ok<SAGROW>
-end
-
 tmp.config = state.config + action * 0.1;
 for i = 1:length(robot.Bodies)
     joint_limits = robot.Bodies{1, i}.Joint.PositionLimits;
@@ -22,4 +18,4 @@ end
 state.achieved = getPos(robot, state.config);
 
 % Update state.deadlock
-state.deadlock = sum(abs(state.config - tmp.last_config)) < 0.01 && sum(abs(action)) > 0.1;
+state.deadlock = sum(abs(state.config - tmp.last_config)) < 0.001 && sum(abs(action)) > 0.1;
