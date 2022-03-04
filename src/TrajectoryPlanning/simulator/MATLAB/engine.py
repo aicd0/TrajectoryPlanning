@@ -12,7 +12,7 @@ class Connector():
             return True
 
         # Read session name from target file.
-        session_file = utils.string_utils.to_file_path(config.MatlabSessionFile)
+        session_file = utils.string_utils.to_file_path(config.Simulator.MATLAB.SessionFile)
         if not os.path.exists(session_file):
             print('MATLAB not started.')
             return False

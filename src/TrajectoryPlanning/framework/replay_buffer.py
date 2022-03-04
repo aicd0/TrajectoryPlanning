@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from simulator.simulator import GameState
+from simulator.targets import GameState
 
 class Transition:
     def __init__(self, state: GameState, action: np.ndarray, reward: float, next_state: GameState) -> None:

@@ -11,7 +11,7 @@ import utils.string_utils
 from framework.model import Actor, Critic
 from framework.random_process import OrnsteinUhlenbeckProcess
 from framework.replay_buffer import ReplayBuffer
-from simulator.simulator import GameState
+from simulator.targets import GameState
 
 checkpoint_critic = 'critic'
 checkpoint_actor = 'actor'
@@ -74,10 +74,13 @@ class Agent:
             return False
         if not os.path.exists(checkpoint_actor_targ_path):
             return False
-        self.critic.load_state_dict(torch.load(checkpoint_critic_path))
-        self.actor.load_state_dict(torch.load(checkpoint_actor_path))
-        self.critic_targ.load_state_dict(torch.load(checkpoint_critic_targ_path))
-        self.actor_targ.load_state_dict(torch.load(checkpoint_actor_targ_path))
+        try:
+            self.critic.load_state_dict(torch.load(checkpoint_critic_path))
+            self.actor.load_state_dict(torch.load(checkpoint_actor_path))
+            self.critic_targ.load_state_dict(torch.load(checkpoint_critic_targ_path))
+            self.actor_targ.load_state_dict(torch.load(checkpoint_actor_targ_path))
+        except RuntimeError:
+            return False
         self.__init_optimizer()
         print('Agent loaded.')
         return True

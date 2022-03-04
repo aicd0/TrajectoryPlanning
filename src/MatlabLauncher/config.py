@@ -1,3 +1,3 @@
 # Output
-SessionFile = '../../outputs/MatlabLauncher/session.txt'
-TargetDirectory = '../TrajectoryPlanning/simulator/MATLAB'
+SessionFile = '../../output/MatlabLauncher/session.txt'
+WorkDirectory = '../TrajectoryPlanning/simulator/MATLAB'

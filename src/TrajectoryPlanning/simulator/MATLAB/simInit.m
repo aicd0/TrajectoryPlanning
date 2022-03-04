@@ -1,8 +1,5 @@
-clearvars;
-tmp.output_folder = '../../../../outputs/MATLAB/';
-
 % Initialize robot.
-tmp.robot_file = [tmp.output_folder, 'robot.mat'];
+tmp.robot_file = [output_dir, 'robot.mat'];
 
 if exist(tmp.robot_file, 'file')
     load(tmp.robot_file, 'robot');
@@ -14,7 +11,7 @@ else
 end
 
 % Generate obstacles.
-tmp.obstacle_file = [tmp.output_folder, 'obstacles.mat'];
+tmp.obstacle_file = [output_dir, 'obstacles.mat'];
 
 if exist(tmp.obstacle_file, 'file')
     load(tmp.obstacle_file, 'obstacles');

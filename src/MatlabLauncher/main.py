@@ -7,7 +7,7 @@ import utils.string_utils
 def main():
     print('Starting MATLAB...')
     eng = matlab.engine.start_matlab()
-    eng.workspace['target_dir'] = utils.string_utils.to_folder_path(config.TargetDirectory)
+    eng.workspace['work_dir'] = utils.string_utils.to_folder_path(config.WorkDirectory)
     eng.onStartup(nargout=0)
     
     file_path = config.SessionFile

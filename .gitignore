@@ -1,4 +1,5 @@
+/output/
+/src/TrajectoryPlanning/output/
 __pycache__/
 .vscode/
 *.asv
-/outputs/

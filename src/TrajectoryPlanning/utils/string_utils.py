@@ -43,3 +43,5 @@ def to_folder_path(path):
         path += '/'
     return path
     
+def dict_to_str(x: dict) -> str:
+    return ', '.join([str(k) + '=' + str(v) for k, v in x.items()])

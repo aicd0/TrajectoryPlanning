@@ -1,29 +1,23 @@
 import numpy as np
 import torch
 
-# MATLAB
-MatlabSessionFile = '../../outputs/MatlabLauncher/session.txt'
-
-# Trainning
 class DataType:
     Numpy = np.float32
     Torch = torch.float32
 
-#  Evaluator
 class Evaluator:
     MaxIterations = 10000
+    OutputLocation = 'output/results'
 
-# Model
 class Model:
-    ActorHidden1 = 400
-    ActorHidden2 = 300
-    CheckpointDir = '../../outputs/Checkpoint'
-    CriticHidden1 = 400
-    CriticHidden2 = 300
-    InitialWeight = 0.003
+    ActorHidden1 = 600
+    ActorHidden2 = 600
+    CheckpointDir = 'output/checkpoint'
+    CriticHidden1 = 600
+    CriticHidden2 = 600
+    InitialWeight = 0.03
     SaveStepInterval = 1000
 
-#  Hyper-parameters
 class DDPG:
     BatchSize = 64
     Epsilon = 50000
@@ -33,9 +27,9 @@ class DDPG:
     MaxEpisodes = 200000
     MaxIterations = 10000
     NoiseEnabled = True
-    ReplayBuffer = 8192
+    ReplayBuffer = 50000
     Tau = 0.001
-    Warmup = 100
+    Warmup = 1000
 
     class OUNoise:
         Mu = 0.0
@@ -54,8 +48,14 @@ class HER:
     Enabled = False
     K = 8
 
-# Testing
 class Test:
     DetachAgent = False
-    NoiseEnabled = False
+    NoiseEnabled = True
     
+class Simulator:
+    class Gym:
+        Envoronment = 'CartPole-v1'
+
+    class MATLAB:
+        SessionFile = '../../output/MatlabLauncher/session.txt'
+        OutputLocation = 'output/matlab'

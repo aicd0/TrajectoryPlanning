@@ -2,9 +2,9 @@ class GameState:
     def __init__(self):
         pass
 
-    def from_reset(self, state_space, action_space, state) -> None:
-        self.state_space = state_space
-        self.action_space = action_space
+    def from_reset(self, dim_state, dim_action, state) -> None:
+        self.__dim_state = dim_state
+        self.__dim_action = dim_action
         self.state = state
 
     def from_step(self, state, reward, done) -> None:
@@ -16,7 +16,7 @@ class GameState:
         return self.state
 
     def dim_state(self) -> int:
-        return self.state_space.shape[0]
+        return self.__dim_state
 
     def dim_action(self) -> int:
-        return self.action_space.shape[0]
+        return self.__dim_action

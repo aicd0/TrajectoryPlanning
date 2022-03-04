@@ -1,107 +1,73 @@
+import config
 import numpy as np
+from math import sqrt
 from simulator.MATLAB.game_state import GameState
 from typing import Tuple
 
 reward_self_collision = -1000
 reward_world_collision = -1000
-reward_deadlock = -100
+reward_deadlock = -1000
 reward_goal_achieved = 1000
 
 class Game:
     def __init__(self) -> None:
-        self.__d2_to_reward = [
-            [0.1, -1],
-            [0.3, -2],
-            [0.5, -3],
-            [0.7, -4],
-            [0.9, -5],
-            [1.1, -6],
-            [1.3, -7],
-            [1.5, -8],
-            [1.7, -9],
-            [1.9, -10],
-        ]
-        for e in self.__d2_to_reward:
-            e[0] *= e[0]
+        pass
 
-    def __distance2reward(self, d2: float) -> Tuple[int, bool]:
-        left = 0
-        right = len(self.__d2_to_reward) - 1
-        while (left != right):
-            i = (left + right + 1) // 2
-            if self.__d2_to_reward[i][0] <= d2:
-                left = i
-            else:
-                right = i - 1
-        if (d2 < self.__d2_to_reward[left][0]):
-            return reward_goal_achieved, True
-        return self.__d2_to_reward[left][1], False
+    def __distance2reward(self, d: float) -> float:
+        return -d
 
     def __update(self, action: np.ndarray, next_state: GameState) -> None:
-        self.__reward = 0
-        self.self_collision = False
-        self.world_collision = False
-        self.deadlock = False
-        self.goal_achived = False
+        self.__self_collision = False
+        self.__world_collision = False
+        self.__deadlock = False
+        self.__goal_achived = False
 
+        # Calculate the distance to the target point.
+        d = sqrt(np.square(next_state.achieved - next_state.desired).sum())
+        self.__reward = self.__distance2reward(d)
+        
         if next_state.self_collision:
             # On self-collision.
-            self.__reward = reward_self_collision
-            self.self_collision = True
+            self.__reward += reward_self_collision
+            self.__self_collision = True
             return
             
         if next_state.world_collision:
             # On world-collision.
-            self.__reward = reward_world_collision
-            self.world_collision = True
+            self.__reward += reward_world_collision
+            self.__world_collision = True
             return
 
         if next_state.deadlock:
             # On deadlock
-            self.__reward = reward_deadlock
-            self.deadlock = True
+            self.__reward += reward_deadlock
+            self.__deadlock = True
             return
 
-        # Calculate the distance to the target point.
-        d2 = np.square(next_state.achieved - next_state.desired).sum()
-        self.reward, self.goal_achived = self.__distance2reward(d2)
+        if d < 0.1:
+            self.__target_point_hold_steps += 1
+            if self.__target_point_hold_steps >= 20:
+                self.__reward += reward_goal_achieved
+                self.__goal_achived = True
+        else:
+            self.__target_point_hold_steps = 0
 
     def reset(self) -> None:
-        self.total_reward = 0.
-        self.reward_counter = {}
-        self.total_self_collision = 0
-        self.total_world_collision = 0
-        self.total_deadlock = 0
-        self.total_goal_achived = 0
+        self.__target_point_hold_steps = 0
+        self.__rewards = []
 
     def update(self, action: np.ndarray, next_state: GameState) -> Tuple:
         self.__update(action, next_state)
-
-        self.__game_over = False
-        self.__stage_over = False
-        if self.self_collision or self.world_collision or self.deadlock:
-            self.__game_over = True
-        elif self.goal_achived:
-            self.__stage_over = True
-
-        self.total_reward += self.__reward
-        self.reward_counter[self.reward] = self.reward_counter.get(self.reward, 0) + 1
-        if self.self_collision:
-            self.total_self_collision += 1
-        if self.world_collision:
-            self.total_world_collision += 1
-        if self.deadlock:
-            self.total_deadlock += 1
-        if self.goal_achived:
-            self.total_goal_achived += 1
-
-        return self.__reward, self.__game_over, self.__stage_over
+        self.__done = self.__self_collision or self.__world_collision or self.__deadlock or self.__goal_achived
+        self.__rewards.append(self.__reward)
+        if len(self.__rewards) > 200:
+            self.__done = True
+        return self.__reward, self.__done
 
     def summary(self) -> None:
-        print('Total reward: %d (sc=%d, wc=%d, dl=%d, g=%d)' % (
-            self.total_reward, self.total_self_collision, self.total_world_collision,
-            self.total_deadlock, self.total_goal_achived))
-        reward_count_str = []
-        for key in sorted(self.reward_counter):
-            reward_count_str.append(str(key) + '(' + str(self.reward_counter[key]) + ')')
-        print('Rewards: [' + ', '.join(reward_count_str) + ']')
+        rewards = np.array(self.__rewards, dtype=config.DataType.Numpy)
+        reward_sum = np.sum(rewards)
+        reward_std = np.std(rewards)
+        print('Rwd=%f, RwdStd=%f (sc=%d, wc=%d, dl=%d, g=%d)' %
+            (reward_sum, reward_std, self.__self_collision,
+            self.__world_collision, self.__deadlock, self.__goal_achived))
