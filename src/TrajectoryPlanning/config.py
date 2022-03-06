@@ -50,11 +50,18 @@ class HER:
 
 class Test:
     DetachAgent = False
+    MaxEpisodes = 1
     NoiseEnabled = True
     
 class Simulator:
     class Gym:
-        Envoronment = 'CartPole-v1'
+        # Supported environment:
+        # CartPole-v0
+        # CartPole-v1
+        # FetchReach-v1
+        # Pendulum-v1
+        Environment = 'FetchReach-v1'
+        MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin'
 
     class MATLAB:
         SessionFile = '../../output/MatlabLauncher/session.txt'

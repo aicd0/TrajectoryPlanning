@@ -20,7 +20,7 @@ class Game:
         self.__self_collision = False
         self.__world_collision = False
         self.__deadlock = False
-        self.__goal_achived = False
+        self.__goal_achieved = False
 
         # Calculate the distance to the target point.
         d = sqrt(np.square(next_state.achieved - next_state.desired).sum())
@@ -48,7 +48,7 @@ class Game:
             self.__target_point_hold_steps += 1
             if self.__target_point_hold_steps >= 20:
                 self.__reward += reward_goal_achieved
-                self.__goal_achived = True
+                self.__goal_achieved = True
         else:
             self.__target_point_hold_steps = 0
 
@@ -58,7 +58,7 @@ class Game:
 
     def update(self, action: np.ndarray, next_state: GameState) -> Tuple:
         self.__update(action, next_state)
-        self.__done = self.__self_collision or self.__world_collision or self.__deadlock or self.__goal_achived
+        self.__done = self.__self_collision or self.__world_collision or self.__deadlock or self.__goal_achieved
         self.__rewards.append(self.__reward)
         if len(self.__rewards) > 200:
             self.__done = True
@@ -70,4 +70,4 @@ class Game:
         reward_std = np.std(rewards)
         print('Rwd=%f, RwdStd=%f (sc=%d, wc=%d, dl=%d, g=%d)' %
             (reward_sum, reward_std, self.__self_collision,
-            self.__world_collision, self.__deadlock, self.__goal_achived))
+            self.__world_collision, self.__deadlock, self.__goal_achieved))

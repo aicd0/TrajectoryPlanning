@@ -1,34 +1,34 @@
 import config
+import os
+os.add_dll_directory(config.Simulator.Gym.MujocoLibPath)
 import gym
 import numpy as np
-from gym.spaces import Discrete
+from gym.spaces import Dict, Discrete
+from simulator.gym.game import Game
 from simulator.gym.game_state import GameState
 
 class Simulator:
     def __init__(self):
-        self.env_name = config.Simulator.Gym.Envoronment
-        self.env = gym.make(self.env_name)
+        self.env = gym.make(config.Simulator.Gym.Environment)
 
-        self.dim_state = self.env.observation_space.shape[0]
-        self.action_discrete = len(self.env.action_space.shape) == 0
+        # Analyse state space
+        if isinstance(self.env.observation_space, Dict):
+            self.dim_state = 0
+            for v in self.env.observation_space.spaces.values():
+                self.dim_state += v.shape[0]
+        else:
+            self.dim_state = self.env.observation_space.shape[0]
 
+        # Analyse action space
+        self.action_discrete = isinstance(self.env.action_space, Discrete)
         if self.action_discrete:
             self.dim_action = 1
-            self.action_n = self.env.action_space.n
+            self.n_action = self.env.action_space.n
         else:
             self.dim_action = self.env.action_space.shape[0]
 
     def close(self):
         self.env.close()
-
-    def __to_real_reward(self, state, reward, done):
-        if self.env_name == 'CartPole-v0':
-            return -1 if done else 1
-        if self.env_name == 'CartPole-v1':
-            return -1 if done else 1
-        if self.env_name == 'Pendulum-v1':
-            return reward
-        return reward
 
     def reset(self) -> GameState:
         state = self.env.reset()
@@ -38,12 +38,11 @@ class Simulator:
 
     def step(self, action: np.ndarray) -> GameState:
         if self.action_discrete:
-            action = np.clip(int((action[0] + 1) / 2 * self.action_n), 0, self.action_n - 1)
+            action = np.clip(int((action[0] + 1) / 2 * self.n_action), 0, self.n_action - 1)
 
-        state, reward, done, _ = self.env.step(action)
-        reward = self.__to_real_reward(state, reward, done)
+        state, reward_raw, done, _ = self.env.step(action)
         game_state = GameState()
-        game_state.from_step(state, reward, done)
+        game_state.from_step(state, reward_raw, done)
         return game_state
 
     def stage(self) -> GameState:
