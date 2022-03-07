@@ -21,11 +21,15 @@ class GameState:
 
     def as_input(self) -> np.ndarray:
         if self.__as_input is None:
-            self.__as_input = np.concatenate((self.config, self.desired - self.achieved), dtype=config.DataType.Numpy)
+            obj_rel_pos = self.desired - self.achieved
+            input_tuple = (
+                self.config,
+                self.achieved,
+                self.desired,
+                obj_rel_pos
+            )
+            self.__as_input = np.concatenate(input_tuple, dtype=config.DataType.Numpy)
         return self.__as_input
 
     def dim_state(self) -> int:
         return len(self.as_input())
-
-    def dim_action(self) -> int:
-        return len(self.config)

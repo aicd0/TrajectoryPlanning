@@ -42,7 +42,7 @@ def main():
     
     # Reset simulator to get sizes of states and actions.
     state = sim.reset()
-    dim_action = state.dim_action()
+    dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
     # Initialize the agent.

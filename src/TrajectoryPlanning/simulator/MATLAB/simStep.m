@@ -1,5 +1,5 @@
 tmp.config = state.config + action * 0.1;
-for i = 1:length(robot.Bodies)
+for i = 2:length(robot.Bodies)
     joint_limits = robot.Bodies{1, i}.Joint.PositionLimits;
     tmp.config(i) = max(tmp.config(i), joint_limits(1));
     tmp.config(i) = min(tmp.config(i), joint_limits(2));

@@ -22,6 +22,10 @@ class Simulator:
         # Plot initialization.
         self.__plot_initialized = False
 
+        # Get dim_action.
+        state = self.reset()
+        self.__dim_action = len(state.config)
+
     def close(self):
         pass
 
@@ -60,3 +64,5 @@ class Simulator:
             self.plot_reset()
         self.eng.simPlotStep(nargout=0)
         
+    def dim_action(self) -> int:
+        return self.__dim_action

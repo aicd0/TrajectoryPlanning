@@ -11,29 +11,21 @@ class Simulator:
     def __init__(self):
         self.env = gym.make(config.Simulator.Gym.Environment)
 
-        # Analyse state space
-        if isinstance(self.env.observation_space, Dict):
-            self.dim_state = 0
-            for v in self.env.observation_space.spaces.values():
-                self.dim_state += v.shape[0]
-        else:
-            self.dim_state = self.env.observation_space.shape[0]
-
         # Analyse action space
         self.action_discrete = isinstance(self.env.action_space, Discrete)
         if self.action_discrete:
-            self.dim_action = 1
+            self.__dim_action = 1
             self.n_action = self.env.action_space.n
         else:
-            self.dim_action = self.env.action_space.shape[0]
+            self.__dim_action = self.env.action_space.shape[0]
 
     def close(self):
         self.env.close()
 
     def reset(self) -> GameState:
-        state = self.env.reset()
+        state_raw = self.env.reset()
         game_state = GameState()
-        game_state.from_reset(self.dim_state, self.dim_action, state)
+        game_state.from_reset(state_raw)
         return game_state
 
     def step(self, action: np.ndarray) -> GameState:
@@ -53,3 +45,6 @@ class Simulator:
 
     def plot_step(self) -> None:
         self.env.render(mode='human')
+
+    def dim_action(self) -> int:
+        return self.__dim_action

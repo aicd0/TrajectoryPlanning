@@ -10,11 +10,7 @@ class Evaluator:
     OutputLocation = 'output/results'
 
 class Model:
-    ActorHidden1 = 600
-    ActorHidden2 = 600
     CheckpointDir = 'output/checkpoint'
-    CriticHidden1 = 600
-    CriticHidden2 = 600
     InitialWeight = 0.03
     SaveStepInterval = 1000
 
@@ -45,12 +41,12 @@ class DDPG:
         MaxEpisodes = 20
 
 class HER:
-    Enabled = False
-    K = 8
+    Enabled = True
+    K = 2
 
 class Test:
     DetachAgent = False
-    MaxEpisodes = 1
+    MaxEpisodes = 100
     NoiseEnabled = True
     
 class Simulator:
