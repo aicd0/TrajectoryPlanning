@@ -3,11 +3,11 @@ tmp.robot_file = [output_dir, 'robot.mat'];
 
 if exist(tmp.robot_file, 'file')
     load(tmp.robot_file, 'robot');
-    disp('Robot loaded.');
+    disp('Robot loaded');
 else
     robot = getRobot();
     save(tmp.robot_file, 'robot');
-    disp('Robot created.');
+    disp('Robot created');
 end
 
 % Generate obstacles.
@@ -15,7 +15,7 @@ tmp.obstacle_file = [output_dir, 'obstacles.mat'];
 
 if exist(tmp.obstacle_file, 'file')
     load(tmp.obstacle_file, 'obstacles');
-    disp('Environment loaded.');
+    disp('Environment loaded');
 else
     tmp.obstacle_count = 8;
     obstacles = {};
@@ -34,5 +34,5 @@ else
         end
     end
     save(tmp.obstacle_file, 'obstacles');
-    disp('Environment created.');
+    disp('Environment created');
 end

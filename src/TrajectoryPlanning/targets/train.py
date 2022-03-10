@@ -1,6 +1,7 @@
 import config
 import random
 import time
+import utils.print
 import utils.string_utils
 from copy import copy
 from framework.ddpg import Agent
@@ -16,7 +17,7 @@ def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]
     for i, trans in enumerate(replay_buffer):
         # Sample k transitions after this transition as new goals.
         sample_src = replay_buffer[i + 1:]
-        sample_count = min(config.HER.K, len(sample_src))
+        sample_count = min(config.Train.HER.K, len(sample_src))
         sampled_trans = random.sample(sample_src, sample_count)
         
         # Generate a new transition for each goal.
@@ -47,64 +48,60 @@ def main():
 
     # Initialize the agent.
     agent = Agent(dim_state, dim_action)
-    # agent.try_load(config.Model.CheckpointDir)
 
-    # Initialize evaluator.
-    evaluator = Evaluator(sim, config.DDPG.Evaluation.MaxEpisodes)
+    # Load evaluator.
+    evaluator = Evaluator(agent)
+    if config.Train.LoadFromPreviousSession: evaluator.load()
 
-    step = 0
-    last_evaluation_step = 0
-    last_log_time = time.time()
+    # Logging.
+    last_update_time = time.time()
+    last_log_step = 0
 
-    for episode in range(1, config.DDPG.MaxEpisodes + 1):
-        episode_replay_buffer: list[Transition] = []
+    while evaluator.get_epoch() <= config.Train.DDPG.MaxEpoches:
+        epoch_replay_buffer: list[Transition] = []
         game.reset()
         state = sim.reset()
         done = False
-        iteration = 0
 
-        while not done and iteration < config.DDPG.MaxIterations:
-            iteration += 1
-            step += 1
+        while not done and evaluator.get_iteration() <= config.Train.DDPG.MaxIterations:
+            step = evaluator.get_step()
 
             # Sample an action and execute.
-            if step < config.DDPG.Warmup:
+            if step < config.Train.DDPG.Warmup:
                 action = agent.sample_random_action()
             else:
-                action = agent.sample_action(state, noise=config.DDPG.NoiseEnabled)
+                action = agent.sample_action(state, noise=config.Train.DDPG.NoiseEnabled)
             next_state = sim.step(action)
 
             # Calculate reward and add to replay buffer.
             reward, done = game.update(action, next_state)
             trans = Transition(state, action, reward, next_state)
             agent.replay_buffer.append(trans)
-            episode_replay_buffer.append(trans)
+            epoch_replay_buffer.append(trans)
     
             # [optional] Optimize & save the agent.
-            if step >= config.DDPG.Warmup:
+            if step >= config.Train.DDPG.Warmup:
                 agent.learn()
-            if step % config.Model.SaveStepInterval == 0:
-                agent.save(config.Model.CheckpointDir)
                 
             state = next_state
+            evaluator.step(reward)
 
-            if time.time() - last_log_time > 1:
-                print('[Train] Ep=%d, Iter=%d, Step=%d       \r' % (episode, iteration, step), end='')
-                last_log_time = time.time()
-
-        # game.summary()
+            if time.time() - last_update_time > 1:
+                utils.print.put('[Train] %s' %
+                    utils.string_utils.dict_to_str(evaluator.summary(shortterm=True)), same_line=True)
+                last_update_time = time.time()
         
         # [optional] Perform HER.
-        if config.HER.Enabled:
-            episode_replay_buffer = augment_replay_buffered(episode_replay_buffer)
-            for trans in episode_replay_buffer:
+        if config.Train.HER.Enabled:
+            epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer)
+            for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 
+        evaluator.epoch(save=step >= config.Train.DDPG.Warmup)
+
         # [optional] Evaluate.
-        if (step - last_evaluation_step) >= config.DDPG.Evaluation.MinStepInterval:
-            last_evaluation_step = step
-            policy = lambda x: agent.sample_action(x, noise=False)
-            validate_res = evaluator(policy, step=step)
-            print('[Evaluate] ' + utils.string_utils.dict_to_str(validate_res))
+        if (step - last_log_step) >= config.Train.DDPG.MinLogStepInterval:
+            last_log_step = step
+            utils.print.put('[Evaluate] ' + utils.string_utils.dict_to_str(evaluator.summary()))
     
     sim.close()

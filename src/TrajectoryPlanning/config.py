@@ -5,50 +5,56 @@ class DataType:
     Numpy = np.float32
     Torch = torch.float32
 
-class Evaluator:
-    MaxIterations = 10000
-    OutputLocation = 'output/results'
-
 class Model:
-    CheckpointDir = 'output/checkpoint'
     InitialWeight = 0.03
-    SaveStepInterval = 1000
 
-class DDPG:
-    BatchSize = 64
-    Epsilon = 50000
-    Gamma = 0.99
-    LRActor = 0.0001
-    LRCritic = 0.001
-    MaxEpisodes = 200000
-    MaxIterations = 10000
-    NoiseEnabled = True
-    ReplayBuffer = 50000
-    Tau = 0.001
-    Warmup = 1000
+class Train:
+    LoadFromPreviousSession = False
 
-    class OUNoise:
-        Mu = 0.0
-        Sigma = 0.2
-        Theta = 0.15
+    class DDPG:
+        BatchSize = 64
+        Epsilon = 50000
+        Gamma = 0.99
+        LRActor = 0.0001
+        LRCritic = 0.001
+        MaxEpoches = 200000
+        MaxIterations = 10000
+        MinLogStepInterval = 500
+        NoiseEnabled = True
+        ReplayBuffer = 50000
+        Tau = 0.001
+        Warmup = 1000
 
-    class UniformNoise:
-        Max = 1.0
-        Min = -1.0
+        class OUNoise:
+            Mu = 0.0
+            Sigma = 0.2
+            Theta = 0.15
 
-    class Evaluation:
-        MinStepInterval = 2000
-        MaxEpisodes = 20
+        class UniformNoise:
+            Max = 1.0
+            Min = -1.0
 
-class HER:
-    Enabled = True
-    K = 2
+    class HER:
+        Enabled = True
+        K = 2
 
 class Test:
     DetachAgent = False
-    MaxEpisodes = 100
     NoiseEnabled = True
-    
+    MaxEpoches = 100
+    MaxIterations = 10000
+
+class Evaluator:
+    CheckpointLocation = 'output/checkpoint'
+    OutputLocation = 'output/results'
+    EpochWindowSize = 20
+
+    class Figure:
+        DPI = 300
+        Height = 5
+        Width = 9
+        MaxSaveEpochInterval = 10
+
 class Simulator:
     class Gym:
         # Supported environment:

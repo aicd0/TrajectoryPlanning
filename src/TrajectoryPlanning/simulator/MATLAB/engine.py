@@ -1,6 +1,7 @@
 import config
 import matlab.engine
 import os
+import utils.print
 import utils.string_utils
 
 class Connector():
@@ -14,7 +15,7 @@ class Connector():
         # Read session name from target file.
         session_file = utils.string_utils.to_file_path(config.Simulator.MATLAB.SessionFile)
         if not os.path.exists(session_file):
-            print('MATLAB not started.')
+            utils.print.put('MATLAB not started.')
             return False
         with open(session_file, 'rb') as f:
             eng_name = f.read().decode()
@@ -22,7 +23,7 @@ class Connector():
         # Check if the session exists.
         eng_names = matlab.engine.find_matlab()
         if not eng_name in eng_names:
-            print('MATLAB session "%s" not found.' % eng_name)
+            utils.print.put('MATLAB session "%s" not found.' % eng_name)
             return False
 
         # Connect to the existing session.

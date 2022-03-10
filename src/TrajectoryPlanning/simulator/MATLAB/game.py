@@ -1,5 +1,6 @@
 import config
 import numpy as np
+import utils.print
 from math import sqrt
 from simulator.MATLAB.game_state import GameState
 from typing import Tuple
@@ -34,7 +35,7 @@ class Game:
             return
 
         # Calculate the distance to the target point.
-        d = sqrt(np.square(next_state.achieved - next_state.desired).sum())
+        d = np.linalg.norm(next_state.achieved - next_state.desired)
         self.__reward = self.__distance2reward(d)
 
         if d < 0.1:
@@ -54,11 +55,3 @@ class Game:
             len(self.__rewards) >= 150
         ])
         return self.__reward, self.__done
-
-    def summary(self) -> None:
-        rewards = np.array(self.__rewards, dtype=config.DataType.Numpy)
-        reward_sum = np.sum(rewards)
-        reward_std = np.std(rewards)
-        print('Rwd=%f, RwdStd=%f (sc=%d, wc=%d, dl=%d, g=%d)' %
-            (reward_sum, reward_std, self.__self_collision,
-            self.__world_collision, self.__deadlock, self.__goal_achieved))

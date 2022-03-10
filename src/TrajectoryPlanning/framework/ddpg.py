@@ -1,4 +1,5 @@
 import config
+import json
 import math
 import numpy as np
 import os
@@ -7,16 +8,18 @@ import torch.nn as nn
 import torch.optim as optim
 import utils.fileio
 import utils.math
+import utils.print
 import utils.string_utils
 from framework.model import Actor, Critic
 from framework.random_process import OrnsteinUhlenbeckProcess
 from framework.replay_buffer import ReplayBuffer
 from simulator.targets import GameState
 
-checkpoint_critic = 'critic'
-checkpoint_actor = 'actor'
-checkpoint_critic_targ = 'critic_targ'
-checkpoint_actor_targ = 'actor_targ'
+critic_checkpoint_file = 'critic'
+actor_checkpoint_file = 'actor'
+critic_targ_checkpoint_file = 'critic_targ'
+actor_targ_checkpoint_file = 'actor_targ'
+replay_buffer_checkpoint_file = 'replay_buffer.txt'
 
 class Agent:
     def __init__(self, dim_state: int, dim_action: int) -> None:
@@ -39,54 +42,65 @@ class Agent:
         self.critic_loss = nn.MSELoss()
 
         # Initialize the replay buffer.
-        self.replay_buffer = ReplayBuffer(config.DDPG.ReplayBuffer)
+        self.replay_buffer = ReplayBuffer(config.Train.DDPG.ReplayBuffer)
 
         # Initialize OU noise.
         self.random_process = OrnsteinUhlenbeckProcess(size=dim_action,
-            theta=config.DDPG.OUNoise.Theta, mu=config.DDPG.OUNoise.Mu,
-            sigma=config.DDPG.OUNoise.Sigma)
+            theta=config.Train.DDPG.OUNoise.Theta, mu=config.Train.DDPG.OUNoise.Mu,
+            sigma=config.Train.DDPG.OUNoise.Sigma)
         self.epsilon = 1.0
 
     def __init_optimizer(self) -> None:
         # Initialize optimizers.
-        self.critic_optim = optim.Adam(self.critic.parameters(), lr=config.DDPG.LRCritic)
-        self.actor_optim = optim.Adam(self.actor.parameters(), lr=config.DDPG.LRActor)
+        self.critic_optim = optim.Adam(self.critic.parameters(), lr=config.Train.DDPG.LRCritic)
+        self.actor_optim = optim.Adam(self.actor.parameters(), lr=config.Train.DDPG.LRActor)
 
     def save(self, path: str) -> None:
         path = utils.string_utils.to_folder_path(path)
         utils.fileio.mktree(path)
-        torch.save(self.critic.state_dict(), path + checkpoint_critic)
-        torch.save(self.actor.state_dict(), path + checkpoint_actor)
-        torch.save(self.critic_targ.state_dict(), path + checkpoint_critic_targ)
-        torch.save(self.actor_targ.state_dict(), path + checkpoint_actor_targ)
+        
+        torch.save(self.critic.state_dict(), path + critic_checkpoint_file)
+        torch.save(self.actor.state_dict(), path + actor_checkpoint_file)
+        torch.save(self.critic_targ.state_dict(), path + critic_targ_checkpoint_file)
+        torch.save(self.actor_targ.state_dict(), path + actor_targ_checkpoint_file)
 
-    def try_load(self, path: str) -> bool:
+        replay_buffer_checkpoint_file_path = path + replay_buffer_checkpoint_file
+        replay_buffer_checkpoint_temp_file_path = replay_buffer_checkpoint_file_path + '.tmp'
+        with open(replay_buffer_checkpoint_temp_file_path, 'w') as f:
+            tmp = self.replay_buffer.to_serializable()
+            json.dump(tmp, f)
+        if os.path.exists(replay_buffer_checkpoint_file_path):
+            os.remove(replay_buffer_checkpoint_file_path)
+        os.rename(replay_buffer_checkpoint_temp_file_path, replay_buffer_checkpoint_file_path)
+
+    def load(self, path: str, learning_enabled: bool=True) -> bool:
         path = utils.string_utils.to_folder_path(path)
-        checkpoint_critic_path = path + checkpoint_critic
-        checkpoint_actor_path = path + checkpoint_actor
-        checkpoint_critic_targ_path = path + checkpoint_critic_targ
-        checkpoint_actor_targ_path = path + checkpoint_actor_targ
-        if not os.path.exists(checkpoint_critic_path):
-            return False
-        if not os.path.exists(checkpoint_actor_path):
-            return False
-        if not os.path.exists(checkpoint_critic_targ_path):
-            return False
-        if not os.path.exists(checkpoint_actor_targ_path):
-            return False
-        try:
-            self.critic.load_state_dict(torch.load(checkpoint_critic_path))
-            self.actor.load_state_dict(torch.load(checkpoint_actor_path))
-            self.critic_targ.load_state_dict(torch.load(checkpoint_critic_targ_path))
-            self.actor_targ.load_state_dict(torch.load(checkpoint_actor_targ_path))
-        except RuntimeError:
-            return False
+        paths = [
+            path + critic_checkpoint_file,
+            path + actor_checkpoint_file,
+            path + critic_targ_checkpoint_file,
+            path + actor_targ_checkpoint_file,
+        ]
+        for p in paths:
+            if not os.path.exists(p):
+                return False
+
+        self.critic.load_state_dict(torch.load(paths[0]))
+        self.actor.load_state_dict(torch.load(paths[1]))
+        self.critic_targ.load_state_dict(torch.load(paths[2]))
+        self.actor_targ.load_state_dict(torch.load(paths[3]))
+
+        if learning_enabled:
+            with open(path + replay_buffer_checkpoint_file, 'r') as f:
+                tmp = json.load(f)
+                self.replay_buffer.from_serializable(tmp)
+
         self.__init_optimizer()
-        print('Agent loaded.')
+        utils.print.put('Agent loaded')
         return True
 
     def sample_random_action(self) -> np.ndarray:
-        return np.random.uniform(config.DDPG.UniformNoise.Min, config.DDPG.UniformNoise.Max, self.dim_action)
+        return np.random.uniform(config.Train.DDPG.UniformNoise.Min, config.Train.DDPG.UniformNoise.Max, self.dim_action)
 
     def sample_action(self, state: GameState, noise: bool, detach: bool = False) -> np.ndarray:
         # Action prediction from actor.
@@ -100,16 +114,16 @@ class Agent:
             action_noise = self.random_process.sample()
             action_noise *= max(self.epsilon, 0)
             action = np.add(action, action_noise, dtype=config.DataType.Numpy)
-            self.epsilon -= 1 / config.DDPG.Epsilon
+            self.epsilon -= 1 / config.Train.DDPG.Epsilon
         
         action = np.clip(action, -1., 1.)
         return action
 
     def learn(self):
-        assert len(self.replay_buffer) >= config.DDPG.BatchSize
+        assert len(self.replay_buffer) >= config.Train.DDPG.BatchSize
 
         # Sample BatchSize transitions from replay buffer for optimization.
-        sampled_trans = self.replay_buffer.sample(config.DDPG.BatchSize)
+        sampled_trans = self.replay_buffer.sample(config.Train.DDPG.BatchSize)
 
         # Convert to ndarray.
         states = np.array([t.state.as_input() for t in sampled_trans], dtype=config.DataType.Numpy)
@@ -126,7 +140,7 @@ class Agent:
         # Optimize critic network.
         next_actions_targ = self.actor_targ(next_states)
         next_q_targ = self.critic_targ(next_states, next_actions_targ)
-        q_targ = rewards + config.DDPG.Gamma * next_q_targ
+        q_targ = rewards + config.Train.DDPG.Gamma * next_q_targ
         q_pred = self.critic(states, actions)
         critic_loss = self.critic_loss(q_pred, q_targ)
 
@@ -144,7 +158,7 @@ class Agent:
         self.actor_optim.step()
 
         # Update target networks.
-        Tau = config.DDPG.Tau
+        Tau = config.Train.DDPG.Tau
         utils.math.soft_update(self.actor_targ, self.actor, Tau)
         utils.math.soft_update(self.critic_targ, self.critic, Tau)
 

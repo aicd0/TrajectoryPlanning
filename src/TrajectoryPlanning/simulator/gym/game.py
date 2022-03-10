@@ -25,6 +25,3 @@ class Game:
     def update(self, action: np.ndarray, state: GameState) -> Tuple:
         reward = self.__state2reward(state)
         return reward, state.done
-
-    def summary(self) -> None:
-        pass
