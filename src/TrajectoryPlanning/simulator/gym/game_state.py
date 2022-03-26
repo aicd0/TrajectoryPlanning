@@ -4,6 +4,8 @@ from typing import Any
 
 class GameState:
     def __init__(self):
+        self.reward_raw = None
+        self.done = None
         self.achieved = None
         self.desired = None
 
@@ -17,6 +19,9 @@ class GameState:
             return
 
         self.state = state_raw
+
+    def update(self) -> None:
+        pass
 
     def from_reset(self, state_raw) -> None:
         self.__from_raw_state(state_raw)
@@ -43,14 +48,19 @@ class GameState:
         for i in range(len(x)):
             if isinstance(x[i], np.ndarray):
                 x[i] = x[i].tolist()
+            elif isinstance(x[i], np.float32):
+                x[i] = float(x[i])
         return x
 
     @staticmethod
     def from_serializable(self, x) -> None:
         obj = GameState()
-        obj.state = np.array(x[0])
+        obj.state = x[0]
         obj.reward_raw = x[1]
         obj.done = x[2]
-        if not x[3] is None: obj.achieved = np.array(x[3])
-        if not x[4] is None: obj.desired = np.array(x[4])
+        obj.achieved = x[3]
+        obj.desired = x[4]
+        for i in range(len(x)):
+            if isinstance(x[i], list):
+                x[i] = np.array(x[i])
         return obj

@@ -97,7 +97,7 @@ def main():
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 
-        evaluator.epoch(save=step >= config.Train.DDPG.Warmup)
+        evaluator.epoch(save=step >= config.Train.DDPG.Warmup * 2)
 
         # [optional] Evaluate.
         if (step - last_log_step) >= config.Train.DDPG.MinLogStepInterval:

@@ -35,7 +35,7 @@ class Train:
             Min = -1.0
 
     class HER:
-        Enabled = True
+        Enabled = False
         K = 2
 
 class Test:
