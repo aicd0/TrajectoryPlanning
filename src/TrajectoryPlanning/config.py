@@ -57,12 +57,14 @@ class Evaluator:
 
 class Simulator:
     class Gym:
-        # Supported environment:
-        # CartPole-v0
-        # CartPole-v1
-        # FetchReach-v1
-        # Pendulum-v1
+        # These environment have been tested and work well:
+        #  CartPole-v0
+        #  CartPole-v1
+        #  FetchReach-v1
+        #  Pendulum-v1
         Environment = 'FetchReach-v1'
+
+        # This option is only for Windows user.
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin'
 
     class MATLAB:

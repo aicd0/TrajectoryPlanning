@@ -1,11 +1,12 @@
 import os
+import utils.platform
 
 def to_path(path: str) -> str:
     path = path.replace('\\', '/')
     items = path.split('/')
     items = [i.strip() for i in items]
-    if any([len(i) == 0 for i in items[0 : -1]]):
-        raise ValueError()
+    if any([len(i) == 0 for i in items[1 if utils.platform.is_linux() else 0 : -1]]):
+        raise ValueError('Invalid path')
     path = '/'.join(items)
     path = os.path.abspath(path)
     path = path.replace('\\', '/')

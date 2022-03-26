@@ -1,2 +1,4 @@
 /output/
 /.vscode/
+__pycache__/
+*.asv

@@ -1,0 +1,8 @@
+<launch>
+
+  <param name="robot_description"
+          command="$(find xacro)/xacro --inorder '$(find robot_sim)/urdf/robot.xacro'" />
+  <node name="robot_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+          args="-urdf -model robot -param robot_description" />
+
+</launch>
