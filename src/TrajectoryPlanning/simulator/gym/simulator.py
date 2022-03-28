@@ -42,9 +42,6 @@ class Simulator:
         game_state.from_step(state, reward_raw, done)
         return game_state
 
-    def stage(self) -> GameState:
-        raise Exception()
-
     def plot_reset(self) -> None:
         pass
 

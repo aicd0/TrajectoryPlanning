@@ -1,6 +1,12 @@
 import numpy as np
 import torch
 
+# Available targets:
+#   train
+#   test
+#   debug
+Target = 'debug'
+
 class DataType:
     Numpy = np.float32
     Torch = torch.float32
@@ -48,6 +54,7 @@ class Evaluator:
     CheckpointLocation = 'output/checkpoint'
     OutputLocation = 'output/results'
     EpochWindowSize = 20
+    MinSaveStepInterval = 1000
 
     class Figure:
         DPI = 300
@@ -56,12 +63,18 @@ class Evaluator:
         MaxSaveEpochInterval = 10
 
 class Simulator:
+    # Available platforms:
+    #   matlab
+    #   gym
+    #   ros
+    Platform = 'ros'
+
     class Gym:
         # These environment have been tested and work well:
-        #  CartPole-v0
-        #  CartPole-v1
-        #  FetchReach-v1
-        #  Pendulum-v1
+        #   CartPole-v0
+        #   CartPole-v1
+        #   FetchReach-v1
+        #   Pendulum-v1
         Environment = 'FetchReach-v1'
 
         # This option is only for Windows user.

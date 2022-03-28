@@ -15,6 +15,7 @@ class Evaluator(object):
         self.__output_path = utils.string_utils.to_folder_path(config.Evaluator.OutputLocation)
         self.__iterations = 0
         self.__epoch_step_rewards = []
+        self.__last_save_step = 0
         self.__last_plot_epoch = 0
 
         self.__epoches = 0
@@ -66,12 +67,14 @@ class Evaluator(object):
         self.__y_win_step_reward_avg.append(np.mean(step_reward_window))
         self.__y_win_step_reward_std.append(np.std(step_reward_window))
 
+        allow_save = self.get_step() - self.__last_save_step >= config.Evaluator.MinSaveStepInterval
         need_plot = self.get_epoch() - self.__last_plot_epoch >= config.Evaluator.Figure.MaxSaveEpochInterval
 
-        if save and not self.__agent is None:
+        if save and allow_save and not self.__agent is None:
             save_val = self.__y_win_epoch_reward_avg[-1]
             if self.__max_save_val is None or save_val > self.__max_save_val:
                 self.__max_save_val = save_val
+                self.__last_save_step = self.get_step()
                 need_plot = True
                 self.save()
 

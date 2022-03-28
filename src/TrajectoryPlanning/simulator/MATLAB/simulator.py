@@ -44,10 +44,6 @@ class Simulator:
         self.eng.simStep(nargout=0)
         return self.__state()
 
-    def stage(self) -> GameState:
-        self.eng.simStage(nargout=0)
-        return self.__state()
-
     def __plot_init(self) -> None:
         assert not self.__plot_initialized
         self.eng.simPlotInit(nargout=0)

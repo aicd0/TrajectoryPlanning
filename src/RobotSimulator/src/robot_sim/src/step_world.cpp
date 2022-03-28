@@ -6,7 +6,7 @@
 #include "gazebo/msgs/msgs.hh"
 #include "gazebo/physics/physics.hh"
 #include "gazebo/transport/transport.hh"
-#include "robot_sim/StepWorldSrvInfo.h"
+#include "robot_sim/StepWorld.h"
 
 namespace gazebo
 {
@@ -33,7 +33,7 @@ namespace gazebo
 
       // Create ROS service.
       m_service = m_node_handle.advertiseService
-      <robot_sim::StepWorldSrvInfo::Request, robot_sim::StepWorldSrvInfo::Response>(
+      <robot_sim::StepWorld::Request, robot_sim::StepWorld::Response>(
         "/user/step_world",
         boost::bind(&StepWorldPlugin::step_srv_callback, this, boost::placeholders::_1, boost::placeholders::_2)
       );
@@ -44,8 +44,8 @@ namespace gazebo
 
   private:
     bool step_srv_callback(
-      robot_sim::StepWorldSrvInfo::Request  &req,
-      robot_sim::StepWorldSrvInfo::Response &res)
+      robot_sim::StepWorld::Request  &req,
+      robot_sim::StepWorld::Response &res)
     {
       res.old_iterations = m_world_ptr->Iterations();
       m_world_ptr->Step(req.steps);

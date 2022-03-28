@@ -1,9 +1,9 @@
 import utils.platform
-import targets.train
+from targets.targets import target
 
 def main():
     utils.platform.check_platform()
-    targets.train.main()
+    target.main()
 
 if __name__ == '__main__':
     main()

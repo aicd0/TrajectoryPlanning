@@ -4,6 +4,7 @@ project(robot_sim)
 find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   roscpp
+  rospy
   std_msgs
   message_generation
 )
@@ -13,7 +14,7 @@ find_package(gazebo REQUIRED)
 # Generate service headers
 add_service_files(
   FILES
-  StepWorldSrvInfo.srv
+  StepWorld.srv
 )
 
 generate_messages(
@@ -24,7 +25,7 @@ generate_messages(
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_sim
-   CATKIN_DEPENDS gazebo_ros roscpp std_msgs message_runtime
+   CATKIN_DEPENDS gazebo_ros roscpp rospy std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
