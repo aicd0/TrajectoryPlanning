@@ -170,7 +170,7 @@
   <gazebo reference="link1">
     <sensor name="link1_contact_sensor" type="contact">
       <always_on>true</always_on>
-      <update_rate>20.0</update_rate>
+      <update_rate>${sensor_update_rate}</update_rate>
       <visualize>false</visualize>
       <contact>
         <collision>link1_collision</collision>
@@ -235,7 +235,7 @@
   <gazebo reference="link2">
     <sensor name="link2_contact_sensor" type="contact">
       <always_on>true</always_on>
-      <update_rate>20.0</update_rate>
+      <update_rate>${sensor_update_rate}</update_rate>
       <visualize>false</visualize>
       <contact>
         <collision>link2_collision</collision>
@@ -300,7 +300,7 @@
   <gazebo reference="link3">
     <sensor name="link3_contact_sensor" type="contact">
       <always_on>true</always_on>
-      <update_rate>20.0</update_rate>
+      <update_rate>${sensor_update_rate}</update_rate>
       <visualize>false</visualize>
       <contact>
         <collision>link3_collision</collision>
@@ -309,6 +309,39 @@
         <bumperTopicName>/link3_bumper</bumperTopicName>
       </plugin>
     </sensor>
+  </gazebo>
+
+  <!-- Joint 4 -->
+  <joint name="joint4" type="continuous">
+    <parent link="link3" />
+    <child link="effector" />
+    <origin xyz="0 0 ${link3_length + link_gap}" rpy="0 0 0" />
+    <axis xyz="0 1 0" />
+    <dynamics damping="0.7" />
+  </joint>
+
+  <!-- Effector -->
+  <link name="effector">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <sphere radius="${marker_point_radius}" />
+      </geometry>
+      <material name="blue"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.1"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="effector">
+    <material>Gazebo/Blue</material>
   </gazebo>
 
 </robot>

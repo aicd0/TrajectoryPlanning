@@ -19,7 +19,7 @@ namespace gazebo
 
   public:
     StepWorldPlugin() :
-      m_node_handle("step_control_plugin") {}
+      m_node_handle("step_world_plugin") {}
 
     void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf)
     {

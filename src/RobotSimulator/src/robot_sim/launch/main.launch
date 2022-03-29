@@ -19,15 +19,23 @@
 
   <group ns="robot">
     <param name="tf_prefix" value="robot_tf" />
-    <include file="$(find robot_sim)/launch/robot_spawn.launch" />
+    <include file="$(find robot_sim)/launch/robot.spawn.launch" />
   </group>
 
-  <!-- <group ns="obstacle">
-    <param name="tf_prefix" value="obstacle_tf" />
-    <include file="$(find robot_sim)/launch/obstacle_spawn.launch" />
+  <!-- <group ns="obstacles">
+    <param name="tf_prefix" value="obstacles_tf" />
+    <include file="$(find robot_sim)/launch/obstacles.spawn.launch" />
   </group> -->
 
+  <group ns="markers">
+    <param name="tf_prefix" value="markers_tf" />
+    <include file="$(find robot_sim)/launch/markers.spawn.launch" />
+  </group>
+
   <!-- ros_control robot launch file -->
-  <include file="$(find robot_sim)/launch/robot_control.launch" />
+  <include file="$(find robot_sim)/launch/robot.control.launch" />
+
+  <!-- Other user-defined nodes -->
+  <node name="place_target_node" pkg="robot_sim" type="place_target" respawn="true" />
 
 </launch>

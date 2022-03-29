@@ -5,8 +5,9 @@ find_package(catkin REQUIRED COMPONENTS
   gazebo_ros
   roscpp
   rospy
-  std_msgs
   message_generation
+  std_msgs
+  geometry_msgs
 )
 
 find_package(gazebo REQUIRED)
@@ -14,18 +15,20 @@ find_package(gazebo REQUIRED)
 # Generate service headers
 add_service_files(
   FILES
+  PlaceTarget.srv
   StepWorld.srv
 )
 
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES robot_sim
-   CATKIN_DEPENDS gazebo_ros roscpp rospy std_msgs message_runtime
+   CATKIN_DEPENDS gazebo_ros roscpp rospy message_runtime std_msgs geometry_msgs
 #  DEPENDS system_lib
 )
 
@@ -39,7 +42,15 @@ link_directories(
   ${GAZEBO_LIBRARY_DIRS}
 )
 
-# Generate plugins
+link_libraries(
+  ${catkin_LIBRARIES}
+  ${GAZEBO_LIBRARIES}
+)
+
+# Generate libraries
 add_library(step_world SHARED src/step_world.cpp)
-target_link_libraries(step_world ${GAZEBO_LIBRARIES})
 add_dependencies(step_world ${PROJECT_NAME}_gencpp)
+
+# Generate executables
+add_executable(place_target src/place_target.cpp)
+add_dependencies(place_target ${PROJECT_NAME}_gencpp)

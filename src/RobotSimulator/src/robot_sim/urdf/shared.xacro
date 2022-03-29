@@ -1,10 +1,16 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Import constants -->
-  <xacro:property name="PI" value="3.1415926535897931"/>
-  
   <!-- Import Rviz colors -->
   <xacro:include filename="$(find robot_sim)/urdf/materials.xacro" />
+
+  <!-- Math constants -->
+  <xacro:property name="PI" value="3.1415926535897931"/>
+
+  <!-- Sensor parameters -->
+  <xacro:property name="sensor_update_rate" value="40.0"/>
+
+  <!-- Marker parameters -->
+  <xacro:property name="marker_point_radius" value="0.02"/>
 
 </robot>

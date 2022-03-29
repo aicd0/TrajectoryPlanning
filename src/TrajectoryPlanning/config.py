@@ -83,3 +83,6 @@ class Simulator:
     class MATLAB:
         SessionFile = '../../output/MatlabLauncher/session.txt'
         OutputLocation = 'output/matlab'
+
+    class ROS:
+        StepIterations = 50

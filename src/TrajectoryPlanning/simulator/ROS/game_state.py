@@ -4,11 +4,10 @@ from typing import Any
 
 class GameState:
     def __init__(self):
-        # self.reward_raw = None
-        # self.done = None
-        # self.achieved = None
-        # self.desired = None
-        pass
+        self.joint_states = None
+        self.collision = None
+        self.achieved = None
+        self.desired = None
 
     def __from_raw_state(self, state_raw):
         # env_name = config.Simulator.Gym.Environment
