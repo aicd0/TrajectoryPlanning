@@ -1,29 +1,31 @@
-import config
 import numpy as np
-from simulator.gym.game_state import GameState
+from simulator.ROS.game_state import GameState
 from typing import Tuple
 
 class Game:
     def __init__(self) -> None:
         pass
 
-    def __state2reward(self, state: GameState):
-        # env_name = config.Simulator.Gym.Environment
-        # if env_name == 'CartPole-v0':
-        #     return -1 if state.done else 1
-        # if env_name == 'CartPole-v1':
-        #     return -1 if state.done else 1
-        # if env_name == 'FetchReach-v1':
-        #     if state.reward_raw < 0:
-        #         return -np.linalg.norm(state.desired - state.achieved) * 10.
-        #     return 0.
-        # return state.reward_raw
-        pass
+    def __distance2reward(self, d: float) -> float:
+        return 10 / (d * 5 + 1)
+
+    def __update(self, action: np.ndarray, state: GameState) -> None:
+        self.__reward = 0
+        self.__done = state.collision
+
+        if self.__done:
+            return
+
+        # Calculate the distance to the target point.
+        d = np.linalg.norm(state.achieved - state.desired)
+        self.__reward = self.__distance2reward(d)
 
     def reset(self) -> None:
-        pass
+        self.__steps = 0
 
     def update(self, action: np.ndarray, state: GameState) -> Tuple:
-        # reward = self.__state2reward(state)
-        # return reward, state.done
-        pass
+        self.__update(action, state)
+        self.__steps += 1
+        if self.__steps >= 150:
+            self.__done = True
+        return self.__reward, self.__done

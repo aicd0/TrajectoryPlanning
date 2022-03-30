@@ -1,73 +1,35 @@
 import config
 import numpy as np
+from simulator.game_state import GameStateBase
 from typing import Any
 
-class GameState:
+class GameState (GameStateBase):
     def __init__(self):
-        self.joint_states = None
-        self.collision = None
-        self.achieved = None
-        self.desired = None
+        GameStateBase.__init__(self)
+        self.joint_states: np.ndarray = None
+        self.collision: bool = None
 
-    def __from_raw_state(self, state_raw):
-        # env_name = config.Simulator.Gym.Environment
+    def _as_input(self) -> np.ndarray:
+        obj_rel_pos = self.desired - self.achieved
 
-        # if env_name == 'FetchReach-v1':
-        #     self.achieved = state_raw['achieved_goal']
-        #     self.desired = state_raw['desired_goal']
-        #     self.state =  np.hstack((state_raw['observation'], self.desired))
-        #     return
+        return np.concatenate((
+            self.joint_states,
+            self.achieved,
+            self.desired,
+            obj_rel_pos,
+        ), dtype=config.DataType.Numpy)
 
-        # self.state = state_raw
-        pass
-
-    def update(self) -> None:
-        pass
-
-    def from_reset(self, state_raw) -> None:
-        # self.__from_raw_state(state_raw)
-        pass
-
-    def from_step(self, state_raw, reward_raw, done: bool) -> None:
-        # self.__from_raw_state(state_raw)
-        # self.reward_raw = reward_raw
-        # self.done = done
-        pass
-
-    def as_input(self):
-        # return self.state
-        pass
-
-    def dim_state(self) -> int:
-        # return len(self.state)
-        pass
-
-    def to_serializable(self) -> Any:
-        # x = [
-        #     self.state,
-        #     self.reward_raw,
-        #     self.done,
-        #     self.achieved,
-        #     self.desired,
-        # ]
-        # for i in range(len(x)):
-        #     if isinstance(x[i], np.ndarray):
-        #         x[i] = x[i].tolist()
-        #     elif isinstance(x[i], np.float32):
-        #         x[i] = float(x[i])
-        # return x
-        pass
+    def _to_list(self) -> list:
+        return [
+            self.joint_states,
+            self.collision,
+        ]
 
     @staticmethod
-    def from_serializable(self, x) -> None:
-        # obj = GameState()
-        # obj.state = x[0]
-        # obj.reward_raw = x[1]
-        # obj.done = x[2]
-        # obj.achieved = x[3]
-        # obj.desired = x[4]
-        # for i in range(len(x)):
-        #     if isinstance(x[i], list):
-        #         x[i] = np.array(x[i])
-        # return obj
-        pass
+    def _from_list(x: list) -> Any:
+        o = GameState()
+        (
+            o.joint_states,
+            o.collision,
+        ) = x
+        return o

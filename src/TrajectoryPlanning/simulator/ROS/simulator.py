@@ -1,18 +1,18 @@
 import config
 import functools
 import numpy as np
+import rospy
 import threading
 import time
 import utils.math
-from simulator.ROS.game import Game
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
-# Import ROS packages.
-import rospy
+# Import ROS and Gazebo types.
 from gazebo_msgs.msg import ContactsState, LinkStates
 from gazebo_msgs.srv import GetJointProperties, GetJointPropertiesResponse
-from robot_sim.srv import StepWorld
+from geometry_msgs.msg import Point
+from robot_sim.srv import PlaceTarget, StepWorld
 from std_msgs.msg import Float64
 
 class SpinThread (threading.Thread):
@@ -60,7 +60,7 @@ class Simulator:
         # Register services.
         self.__services = {}
         self.__register_service(ServiceLibrary.step_world, StepWorld)
-        self.__register_service(ServiceLibrary.step_world, StepWorld)
+        self.__register_service(ServiceLibrary.place_target, PlaceTarget)
         self.__register_service(ServiceLibrary.get_joint_properties, GetJointProperties)
 
         # Register publishers.
@@ -157,7 +157,11 @@ class Simulator:
         return self.__state()
 
     def plot_reset(self) -> None:
-        raise NotImplementedError()
+        pt = Point()
+        pt.x = self.__desired[0]
+        pt.y = self.__desired[1]
+        pt.z = self.__desired[2]
+        self.__get_service(ServiceLibrary.place_target)(pt)
 
     def plot_step(self) -> None:
         pass

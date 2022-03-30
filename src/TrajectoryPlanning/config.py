@@ -1,11 +1,11 @@
 import numpy as np
 import torch
 
-# Available targets:
-#   train
-#   test
-#   debug
-Target = 'debug'
+# Valid targets:
+# - train
+# - test
+# - debug
+Target = 'train'
 
 class DataType:
     Numpy = np.float32
@@ -63,18 +63,18 @@ class Evaluator:
         MaxSaveEpochInterval = 10
 
 class Simulator:
-    # Available platforms:
-    #   matlab
-    #   gym
-    #   ros
+    # Valid platforms:
+    # - matlab
+    # - gym
+    # - ros
     Platform = 'ros'
 
     class Gym:
-        # These environment have been tested and work well:
-        #   CartPole-v0
-        #   CartPole-v1
-        #   FetchReach-v1
-        #   Pendulum-v1
+        # These environments have been tested and work fine:
+        # - CartPole-v0
+        # - CartPole-v1
+        # - FetchReach-v1
+        # - Pendulum-v1
         Environment = 'FetchReach-v1'
 
         # This option is only for Windows user.

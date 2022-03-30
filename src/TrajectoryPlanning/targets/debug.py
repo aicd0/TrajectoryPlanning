@@ -1,26 +1,32 @@
 import numpy as np
-from simulator.targets import Game, GameState, Simulator
+from simulator.targets import GameState
+from framework.replay_buffer import ReplayBuffer, Transition
 
 def main():
-    sim = Simulator()
-    dim_action = sim.dim_action()
+    rb = ReplayBuffer(5)
 
-    action = np.random.uniform(-0.7, 0.7, dim_action)
-    state = sim.reset()
-    state = sim.step(action)
-    state = sim.step(action)
-    state = sim.step(action)
+    st1 = GameState()
+    st1.achieved = np.array([1., 2.])
+    st1.desired = np.array([3., 4.])
+    st1.collision = False
+    st1.joint_states = np.array([5., 6., 7.])
 
-    action = np.random.uniform(-0.7, 0.7, dim_action)
-    state = sim.reset()
-    state = sim.step(action)
-    state = sim.step(action)
-    state = sim.step(action)
+    st2 = GameState()
+    st2.achieved = np.array([8., 9.])
+    st2.desired = np.array([8., 9.])
+    st2.collision = False
+    st2.joint_states = np.array([8., 9., 8.])
 
-    action = np.random.uniform(-0.7, 0.7, dim_action)
-    state = sim.reset()
-    state = sim.step(action)
-    state = sim.step(action)
-    state = sim.step(action)
+    a = Transition(st1, np.array([1., 2.]), 12., st2)
+    a2 = Transition(st2, np.array([1., 2.]), 12., st1)
+    rb.append(a)
+    rb.append(a2)
+    rb.append(a)
+    rb.append(a2)
+    rb.append(a)
+    rb.append(a2)
 
-    sim.close()
+    d = rb.to_serializable()
+    e = ReplayBuffer.from_serializable(d, 3)
+    d = e.to_serializable()
+    pass

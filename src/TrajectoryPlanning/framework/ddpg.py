@@ -93,7 +93,7 @@ class Agent:
         if learning_enabled:
             with open(path + replay_buffer_checkpoint_file, 'r') as f:
                 tmp = json.load(f)
-                self.replay_buffer.from_serializable(tmp)
+                self.replay_buffer = ReplayBuffer.from_serializable(tmp, config.Train.DDPG.ReplayBuffer)
 
         self.__init_optimizer()
         utils.print.put('Agent loaded')

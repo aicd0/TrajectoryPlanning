@@ -1,13 +1,15 @@
 import config
 import numpy as np
+from simulator.game_state import GameStateBase
 from typing import Any
 
-class GameState:
+class GameState (GameStateBase):
     def __init__(self):
-        self.__as_input = None
-
-    def update(self):
-        self.__as_input = None
+        GameStateBase.__init__(self)
+        self.config = None
+        self.self_collision = None
+        self.world_collision = None
+        self.deadlock = None
 
     def from_matlab(self, src):
         """Convert states from MATLAB."""
@@ -20,40 +22,31 @@ class GameState:
         self.deadlock = bool(src['deadlock'])
         self.update()
 
-    def as_input(self) -> np.ndarray:
-        if self.__as_input is None:
-            obj_rel_pos = self.desired - self.achieved
+    def _as_input(self) -> np.ndarray:
+        obj_rel_pos = self.desired - self.achieved
 
-            input_tuple = (
-                self.config,
-                self.achieved,
-                self.desired,
-                obj_rel_pos,
-            )
+        return np.concatenate((
+            self.config,
+            self.achieved,
+            self.desired,
+            obj_rel_pos,
+        ), dtype=config.DataType.Numpy)
 
-            self.__as_input = np.concatenate(input_tuple, dtype=config.DataType.Numpy)
-        return self.__as_input
-
-    def dim_state(self) -> int:
-        return len(self.as_input())
-
-    def to_serializable(self) -> Any:
+    def _to_list(self) -> list:
         return [
-            self.config.tolist(),
-            self.achieved.tolist(),
-            self.desired.tolist(),
+            self.config,
             self.self_collision,
             self.world_collision,
             self.deadlock,
         ]
 
     @staticmethod
-    def from_serializable(x):
-        obj = GameState()
-        obj.config = np.array(x[0])
-        obj.achieved = np.array(x[1])
-        obj.desired = np.array(x[2])
-        obj.self_collision = x[3]
-        obj.world_collision = x[4]
-        obj.deadlock = x[5]
-        return obj
+    def _from_list(x: list) -> Any:
+        o = GameState()
+        (
+            o.config,
+            o.self_collision,
+            o.world_collision,
+            o.deadlock,
+        ) = x
+        return o

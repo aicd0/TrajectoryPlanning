@@ -1,13 +1,14 @@
 import config
 import numpy as np
+from simulator.game_state import GameStateBase
 from typing import Any
 
-class GameState:
+class GameState (GameStateBase):
     def __init__(self):
+        GameStateBase.__init__(self)
+        self.states = None
         self.reward_raw = None
         self.done = None
-        self.achieved = None
-        self.desired = None
 
     def __from_raw_state(self, state_raw):
         env_name = config.Simulator.Gym.Environment
@@ -15,13 +16,12 @@ class GameState:
         if env_name == 'FetchReach-v1':
             self.achieved = state_raw['achieved_goal']
             self.desired = state_raw['desired_goal']
-            self.state =  np.hstack((state_raw['observation'], self.desired))
-            return
-
-        self.state = state_raw
-
-    def update(self) -> None:
-        pass
+            self.states = np.concatenate((
+                state_raw['observation'],
+                self.desired,
+            ), dtype=config.DataType.Numpy)
+        else:
+            self.states = state_raw
 
     def from_reset(self, state_raw) -> None:
         self.__from_raw_state(state_raw)
@@ -31,36 +31,22 @@ class GameState:
         self.reward_raw = reward_raw
         self.done = done
 
-    def as_input(self):
-        return self.state
+    def _as_input(self) -> np.ndarray:
+        return self.states
 
-    def dim_state(self) -> int:
-        return len(self.state)
-
-    def to_serializable(self) -> Any:
-        x = [
-            self.state,
+    def _to_list(self) -> list:
+        return [
+            self.states,
             self.reward_raw,
             self.done,
-            self.achieved,
-            self.desired,
         ]
-        for i in range(len(x)):
-            if isinstance(x[i], np.ndarray):
-                x[i] = x[i].tolist()
-            elif isinstance(x[i], np.float32):
-                x[i] = float(x[i])
-        return x
 
     @staticmethod
-    def from_serializable(self, x) -> None:
-        obj = GameState()
-        obj.state = x[0]
-        obj.reward_raw = x[1]
-        obj.done = x[2]
-        obj.achieved = x[3]
-        obj.desired = x[4]
-        for i in range(len(x)):
-            if isinstance(x[i], list):
-                x[i] = np.array(x[i])
-        return obj
+    def _from_list(x: list) -> Any:
+        o = GameState()
+        (
+            o.states,
+            o.reward_raw,
+            o.done,
+        ) = x
+        return o
