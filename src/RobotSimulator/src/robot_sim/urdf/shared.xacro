@@ -8,7 +8,7 @@
   <xacro:property name="PI" value="3.1415926535897931"/>
 
   <!-- Sensor parameters -->
-  <xacro:property name="sensor_update_rate" value="40.0"/>
+  <xacro:property name="sensor_update_rate" value="50.0"/>
 
   <!-- Marker parameters -->
   <xacro:property name="marker_point_radius" value="0.02"/>

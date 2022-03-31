@@ -15,11 +15,11 @@ class Model:
     InitialWeight = 0.03
 
 class Train:
-    LoadFromPreviousSession = False
+    LoadFromPreviousSession = True
 
     class DDPG:
         BatchSize = 64
-        Epsilon = 50000
+        Epsilon = 20000
         Gamma = 0.99
         LRActor = 0.0001
         LRCritic = 0.001
@@ -33,7 +33,7 @@ class Train:
 
         class OUNoise:
             Mu = 0.0
-            Sigma = 1.0
+            Sigma = 0.5
             Theta = 0.15
 
         class UniformNoise:
@@ -41,12 +41,12 @@ class Train:
             Min = -1.0
 
     class HER:
-        Enabled = False
+        Enabled = True
         K = 2
 
 class Test:
     DetachAgent = False
-    NoiseEnabled = True
+    NoiseEnabled = False
     MaxEpoches = 100
     MaxIterations = 10000
 
@@ -85,4 +85,8 @@ class Simulator:
         OutputLocation = 'output/matlab'
 
     class ROS:
+        DynamicEnabled = False
+        ActionAmp = 0.1
+
+        # Only make a difference when dynamic is enabled.
         StepIterations = 50

@@ -5,7 +5,6 @@ import rospy
 import threading
 import time
 import utils.math
-from math import pi
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
@@ -127,13 +126,12 @@ class Simulator:
             link_states: LinkStates = self.__get_subscriber(TopicLibrary.link_states)
             
             self.__state = GameState()
-            self.__state.joint_position = np.array(joint_states.position, dtype=config.DataType.Numpy)
-            self.__state.joint_position[0] = utils.math.period_map(self.__state.joint_position[0], -pi, pi)
-            self.__state.joint_velocity = np.array(joint_states.velocity, dtype=config.DataType.Numpy)
+            self.__state.from_joint_states(joint_states)
             self.__state.collision = len(link1_bumper.states) + len(link2_bumper.states) + len(link3_bumper.states) > 0
             pos_achieved = link_states.pose[link_states.name.index('robot::effector')].position
             self.__state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
             self.__state.desired = self.__desired
+            
         return self.__state
 
     def close(self):
@@ -157,7 +155,7 @@ class Simulator:
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        target_position = self.__get_state().joint_position + action * 0.2
+        target_position = self.__get_state().joint_position + action * config.Simulator.ROS.ActionAmp
         self.__get_publisher(TopicLibrary.joint0_com).publish(target_position[0])
         self.__get_publisher(TopicLibrary.joint1_com).publish(target_position[1])
         self.__get_publisher(TopicLibrary.joint2_com).publish(target_position[2])

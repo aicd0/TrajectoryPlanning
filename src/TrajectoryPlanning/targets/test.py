@@ -3,7 +3,7 @@ import numpy as np
 import utils.print
 import utils.string_utils
 from framework.ddpg import Agent
-from simulator.targets import Game, Simulator
+from simulator import Game, Simulator
 
 def main():
     sim = Simulator()
@@ -30,7 +30,8 @@ def main():
 
         while not done and iteration < config.Test.MaxIterations:
             iteration += 1
-            action = agent.sample_action(state, noise=config.Test.NoiseEnabled, detach=config.Test.DetachAgent)
+            noise_amount = 1 if config.Test.NoiseEnabled else -1
+            action = agent.sample_action(state, noise_amount=noise_amount, detach=config.Test.DetachAgent)
             state = sim.step(action)
             reward, done = game.update(action, state)
             epoch_reward += reward

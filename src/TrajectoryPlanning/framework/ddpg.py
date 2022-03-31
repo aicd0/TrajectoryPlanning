@@ -13,7 +13,7 @@ import utils.string_utils
 from framework.model import Actor, Critic
 from framework.random_process import OrnsteinUhlenbeckProcess
 from framework.replay_buffer import ReplayBuffer
-from simulator.targets import GameState
+from simulator import GameState
 
 critic_checkpoint_file = 'critic'
 actor_checkpoint_file = 'actor'
@@ -48,7 +48,6 @@ class Agent:
         self.random_process = OrnsteinUhlenbeckProcess(size=dim_action,
             theta=config.Train.DDPG.OUNoise.Theta, mu=config.Train.DDPG.OUNoise.Mu,
             sigma=config.Train.DDPG.OUNoise.Sigma)
-        self.epsilon = 1.0
 
     def __init_optimizer(self) -> None:
         # Initialize optimizers.
@@ -102,21 +101,19 @@ class Agent:
     def sample_random_action(self) -> np.ndarray:
         return np.random.uniform(config.Train.DDPG.UniformNoise.Min, config.Train.DDPG.UniformNoise.Max, self.dim_action)
 
-    def sample_action(self, state: GameState, noise: bool, detach: bool = False) -> np.ndarray:
-        # Action prediction from actor.
+    def sample_action(self, state: GameState, noise_amount: float, detach: bool = False) -> np.ndarray:
         state = torch.tensor(state.as_input(), dtype=config.DataType.Torch)
+
         if detach:
             action = np.zeros((self.dim_action), config.DataType.Numpy)
         else:
             action = self.actor(state).detach().numpy()
 
-        if noise:
-            action_noise = self.random_process.sample()
-            action_noise *= max(self.epsilon, 0)
+        if noise_amount > 0:
+            action_noise = self.random_process.sample() * noise_amount
             action = np.add(action, action_noise, dtype=config.DataType.Numpy)
-            self.epsilon -= 1 / config.Train.DDPG.Epsilon
         
-        action = np.clip(action, -1., 1.)
+        action = np.clip(action, -1, 1)
         return action
 
     def learn(self):

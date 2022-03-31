@@ -7,7 +7,7 @@ from copy import copy
 from framework.ddpg import Agent
 from framework.evaluator import Evaluator
 from framework.replay_buffer import Transition
-from simulator.targets import Game, Simulator
+from simulator import Game, Simulator
 
 def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]:
     res: list[Transition] = []
@@ -66,11 +66,17 @@ def main():
         while not done and evaluator.get_iteration() <= config.Train.DDPG.MaxIterations:
             step = evaluator.get_step()
 
-            # Sample an action and execute.
+            # Sample an action and perform.
             if step < config.Train.DDPG.Warmup:
                 action = agent.sample_random_action()
             else:
-                action = agent.sample_action(state, noise=config.Train.DDPG.NoiseEnabled)
+                if config.Train.DDPG.NoiseEnabled:
+                    noise_amount = 1 - step / config.Train.DDPG.Epsilon
+                else:
+                    noise_amount = -1
+
+                action = agent.sample_action(state, noise_amount=noise_amount)
+
             next_state = sim.step(action)
 
             # Calculate reward and add to replay buffer.
