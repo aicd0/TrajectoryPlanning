@@ -33,7 +33,7 @@ class Train:
 
         class OUNoise:
             Mu = 0.0
-            Sigma = 0.2
+            Sigma = 1.0
             Theta = 0.15
 
         class UniformNoise:

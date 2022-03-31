@@ -5,14 +5,15 @@ import rospy
 import threading
 import time
 import utils.math
+from math import pi
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
 # Import ROS and Gazebo types.
 from gazebo_msgs.msg import ContactsState, LinkStates
-from gazebo_msgs.srv import GetJointProperties, GetJointPropertiesResponse
 from geometry_msgs.msg import Point
 from robot_sim.srv import PlaceTarget, StepWorld
+from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
 class SpinThread (threading.Thread):
@@ -34,13 +35,13 @@ class SpinThread (threading.Thread):
 class ServiceLibrary:
     step_world = '/user/step_world'
     place_target = '/user/place_target'
-    get_joint_properties = '/gazebo/get_joint_properties'
 
 class TopicLibrary:
     joint0_com = '/robot/joint0_position_controller/command'
     joint1_com = '/robot/joint1_position_controller/command'
     joint2_com = '/robot/joint2_position_controller/command'
     joint3_com = '/robot/joint3_position_controller/command'
+    joint_states = '/robot/joint_states'
     link1_bumper = '/link1_bumper'
     link2_bumper = '/link2_bumper'
     link3_bumper = '/link3_bumper'
@@ -53,6 +54,8 @@ class Simulator:
         if Simulator.__client_activated:
             raise Exception()
         Simulator.__client_activated = True
+        self.__startup = False
+        self.__state = None
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -61,7 +64,6 @@ class Simulator:
         self.__services = {}
         self.__register_service(ServiceLibrary.step_world, StepWorld)
         self.__register_service(ServiceLibrary.place_target, PlaceTarget)
-        self.__register_service(ServiceLibrary.get_joint_properties, GetJointProperties)
 
         # Register publishers.
         self.__publishers = {}
@@ -72,6 +74,7 @@ class Simulator:
 
         # Register subscribers.
         self.__subscribers = {}
+        self.__register_subscriber(TopicLibrary.joint_states, JointState)
         self.__register_subscriber(TopicLibrary.link1_bumper, ContactsState)
         self.__register_subscriber(TopicLibrary.link2_bumper, ContactsState)
         self.__register_subscriber(TopicLibrary.link3_bumper, ContactsState)
@@ -80,6 +83,7 @@ class Simulator:
         # Spin to listen to topic events.
         self.__spin_thread = SpinThread()
         self.__spin_thread.start()
+        time.sleep(1)
 
     def __register_service(self, name: str, type: Type) -> None:
         if name in self.__services:
@@ -110,58 +114,59 @@ class Simulator:
     def __get_subscriber(self, name: str) -> Any:
         return self.__subscribers[name]
 
-    def __state(self) -> GameState:
-        joint0: GetJointPropertiesResponse = self.__get_service(ServiceLibrary.get_joint_properties)('joint0')
-        joint1: GetJointPropertiesResponse = self.__get_service(ServiceLibrary.get_joint_properties)('joint1')
-        joint2: GetJointPropertiesResponse = self.__get_service(ServiceLibrary.get_joint_properties)('joint2')
-        joint3: GetJointPropertiesResponse = self.__get_service(ServiceLibrary.get_joint_properties)('joint3')
-        link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
-        link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
-        link3_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link3_bumper)
-        link_states: LinkStates = self.__get_subscriber(TopicLibrary.link_states)
-        
-        state = GameState()
-        state.joint_states = np.array([
-            joint0.position[0],
-            joint1.position[0],
-            joint2.position[0],
-            joint3.position[0],
-        ])
-        state.collision = len(link1_bumper.states) + len(link2_bumper.states) + len(link3_bumper.states) > 0
-        pos_achieved = link_states.pose[link_states.name.index('robot::effector')].position
-        state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
-        state.desired = self.__desired
-        return state
+    def __step_world(self) -> None:
+        self.__get_service(ServiceLibrary.step_world)(config.Simulator.ROS.StepIterations)
+        self.__state = None
+
+    def __get_state(self) -> GameState:
+        if self.__state == None:
+            joint_states: JointState = self.__get_subscriber(TopicLibrary.joint_states)
+            link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
+            link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
+            link3_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link3_bumper)
+            link_states: LinkStates = self.__get_subscriber(TopicLibrary.link_states)
+            
+            self.__state = GameState()
+            self.__state.joint_position = np.array(joint_states.position, dtype=config.DataType.Numpy)
+            self.__state.joint_position[0] = utils.math.period_map(self.__state.joint_position[0], -pi, pi)
+            self.__state.joint_velocity = np.array(joint_states.velocity, dtype=config.DataType.Numpy)
+            self.__state.collision = len(link1_bumper.states) + len(link2_bumper.states) + len(link3_bumper.states) > 0
+            pos_achieved = link_states.pose[link_states.name.index('robot::effector')].position
+            self.__state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
+            self.__state.desired = self.__desired
+        return self.__state
 
     def close(self):
         self.__spin_thread.terminate()
         Simulator.__client_activated = False
 
     def reset(self) -> GameState:
-        self.__desired = utils.math.random_point_in_hypersphere(3, low=0.2, high=2.0)
-        if not self.__state_initialized:
-            self.__get_service(ServiceLibrary.step_world)(config.Simulator.ROS.StepIterations)
-            self.__state_initialized = True
-        return self.__state()
+        self.__desired = utils.math.random_point_in_hypersphere(3, low=0.4, high=1.4)
+        self.__desired[2] += 2.0
+        if not self.__startup:
+            self.__step_world()
+            self.__startup = True
 
-    def step(self, action: np.ndarray) -> GameState:
-        joint0_pos = action[0]
-        joint1_pos = action[1]
-        joint2_pos = action[2]
-        joint3_pos = action[3]
-        self.__get_publisher(TopicLibrary.joint0_com).publish(joint0_pos)
-        self.__get_publisher(TopicLibrary.joint1_com).publish(joint1_pos)
-        self.__get_publisher(TopicLibrary.joint2_com).publish(joint2_pos)
-        self.__get_publisher(TopicLibrary.joint3_com).publish(joint3_pos)
-        self.__get_service(ServiceLibrary.step_world)(config.Simulator.ROS.StepIterations)
-        return self.__state()
-
-    def plot_reset(self) -> None:
+        # Update target point.
         pt = Point()
         pt.x = self.__desired[0]
         pt.y = self.__desired[1]
         pt.z = self.__desired[2]
         self.__get_service(ServiceLibrary.place_target)(pt)
+
+        return self.__get_state()
+
+    def step(self, action: np.ndarray) -> GameState:
+        target_position = self.__get_state().joint_position + action * 0.2
+        self.__get_publisher(TopicLibrary.joint0_com).publish(target_position[0])
+        self.__get_publisher(TopicLibrary.joint1_com).publish(target_position[1])
+        self.__get_publisher(TopicLibrary.joint2_com).publish(target_position[2])
+        self.__get_publisher(TopicLibrary.joint3_com).publish(target_position[3])
+        self.__step_world()
+        return self.__get_state()
+
+    def plot_reset(self) -> None:
+        pass
 
     def plot_step(self) -> None:
         pass

@@ -19,6 +19,14 @@
   <xacro:property name="link1_length" value="0.5" />
   <xacro:property name="link2_length" value="0.5" />
   <xacro:property name="link3_length" value="0.4" />
+  <xacro:property name="joint1_low" value="0.0" />
+  <xacro:property name="joint1_high" value="${PI/2}" />
+  <xacro:property name="joint2_low" value="0.0" />
+  <xacro:property name="joint2_high" value="${PI/2}" />
+  <xacro:property name="joint3_low" value="0.0" />
+  <xacro:property name="joint3_high" value="${PI/2}" />
+  <xacro:property name="joint_effort_lim" value="2000" />
+  <xacro:property name="joint_velocity_lim" value="15" />
   
   <!-- Enable self-collision -->
   <gazebo>
@@ -117,12 +125,13 @@
   </gazebo>
 
   <!-- Joint 1 -->
-  <joint name="joint1" type="continuous">
+  <joint name="joint1" type="revolute">
     <parent link="link0" />
     <child link="link1" />
     <origin xyz="0 0 ${0.1 + link_gap/2}" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.7" />
+    <limit lower="${joint1_low}" upper="${joint1_high}" effort="${joint_effort_lim}" velocity="${joint_velocity_lim}"/>
+    <dynamics damping="0.5" />
   </joint>
 
   <transmission name="tran1">
@@ -182,12 +191,13 @@
   </gazebo>
 
   <!-- Joint 2 -->
-  <joint name="joint2" type="continuous">
+  <joint name="joint2" type="revolute">
     <parent link="link1" />
     <child link="link2" />
     <origin xyz="0 0 ${link1_length + link_gap}" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.7" />
+    <limit lower="${joint2_low}" upper="${joint2_high}" effort="${joint_effort_lim}" velocity="${joint_velocity_lim}"/>
+    <dynamics damping="0.5" />
   </joint>
 
   <transmission name="tran2">
@@ -247,12 +257,13 @@
   </gazebo>
 
   <!-- Joint 3 -->
-  <joint name="joint3" type="continuous">
+  <joint name="joint3" type="revolute">
     <parent link="link2" />
     <child link="link3" />
     <origin xyz="0 0 ${link2_length + link_gap}" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.7" />
+    <limit lower="${joint3_low}" upper="${joint3_high}" effort="${joint_effort_lim}" velocity="${joint_velocity_lim}"/>
+    <dynamics damping="0.5" />
   </joint>
 
   <transmission name="tran3">
@@ -317,7 +328,7 @@
     <child link="effector" />
     <origin xyz="0 0 ${link3_length + link_gap}" rpy="0 0 0" />
     <axis xyz="0 1 0" />
-    <dynamics damping="0.7" />
+    <dynamics damping="0.5" />
   </joint>
 
   <!-- Effector -->

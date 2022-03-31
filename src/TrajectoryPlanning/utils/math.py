@@ -14,3 +14,14 @@ def random_point_in_hypersphere(dim: int, low: float=0, high: float=1) -> np.nda
     pt /= np.linalg.norm(pt)
     pt *= random.uniform(low**dim, high**dim) ** (1/dim)
     return pt
+
+def period_map(val: float, low: float, high: float) -> float:
+    span = high - low
+    rel = val - low
+    count = int(rel / span)
+    if rel < 0:
+        count -= 1
+    return val - span * count
+
+def linear_map(val: float, src_low: float, src_high: float, dst_low: float, dst_high) -> float:
+    return (val - src_low) / (src_high - src_low) * (dst_high - dst_low) + dst_low
