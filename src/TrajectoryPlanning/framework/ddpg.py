@@ -154,14 +154,21 @@ class Agent:
         actor_loss.backward()
         self.actor_optim.step()
 
+        # Value check.
+        critic_loss_val = critic_loss.item()
+        actor_loss_val = actor_loss.item()
+        assert not math.isnan(critic_loss_val)
+        assert not math.isnan(actor_loss_val)
+
         # Update target networks.
         Tau = config.Train.DDPG.Tau
         utils.math.soft_update(self.actor_targ, self.actor, Tau)
         utils.math.soft_update(self.critic_targ, self.critic, Tau)
 
-        # Statistics.
-        critic_loss_val = critic_loss.item()
-        actor_loss_val = actor_loss.item()
-
-        if math.isnan(critic_loss_val) or math.isnan(actor_loss_val):
-            raise RuntimeError()
+        # [optional] Update transition priority.
+        if config.Train.DDPG.PER.Enabled:
+            priorities = torch.abs(q_pred - q_targ).detach().numpy()
+            priorities **= config.Train.DDPG.PER.Alpha
+            priorities *= config.Train.DDPG.PER.K
+            for i in range(len(sampled_trans)):
+                sampled_trans[i].p = float(priorities[i][0])

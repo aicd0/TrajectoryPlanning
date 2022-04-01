@@ -1,14 +1,26 @@
+import config
 import numpy as np
 import random
 from simulator import GameState
 from typing import Any, Iterator
 
 class Transition:
-    def __init__(self, state: GameState, action: np.ndarray, reward: float, next_state: GameState) -> None:
+    def __init__(self, state: GameState, action: np.ndarray, reward: float, next_state: GameState, p: float=1) -> None:
         self.state = state
         self.action = action
         self.reward = reward
         self.next_state = next_state
+        self.node = None
+        self.__p = p
+
+    @property
+    def p(self) -> float:
+        return self.__p
+
+    @p.setter
+    def p(self, value) -> None:
+        self.__p = value
+        self.node.update_sum()
 
     def to_serializable(self) -> Any:
         return [
@@ -16,6 +28,7 @@ class Transition:
             self.action.tolist(),
             self.reward,
             self.next_state.to_list(),
+            self.p,
         ]
 
     @staticmethod
@@ -25,7 +38,60 @@ class Transition:
             np.array(x[1]),
             x[2],
             GameState.from_list(x[3]),
+            x[4],
         )
+
+class ReplayBufferNode:
+    def __init__(self, trans: Transition, parent=None):
+        self.count = 0
+        self.left = None
+        self.right = None
+        self.trans = trans
+        self.sum = trans.p
+        self.parent = parent
+        trans.node = self
+
+        if not parent is None:
+            parent.count += 1
+
+    def push(self, trans: Transition):
+        if self.trans is None:
+            if self.left.count <= self.right.count:
+                self.left.push(trans)
+            else:
+                self.right.push(trans)
+        else:
+            # Split into two nodes.
+            self.left = ReplayBufferNode(self.trans, self)
+            self.right = ReplayBufferNode(trans, self)
+            self.trans = None
+
+        if not self.parent is None:
+            self.parent.count += 1
+        self.sum += trans.p
+
+    def find(self, pos: float) -> Transition:
+        assert 0 <= pos <= self.sum
+        if self.trans is None:
+            if pos < self.left.sum:
+                return self.left.find(pos)
+            else:
+                return self.right.find(pos - self.left.sum)
+        return self.trans
+
+    def update_sum(self) -> None:
+        if self.trans is None:
+            self.sum = self.left.sum + self.right.sum
+        else:
+            self.sum = self.trans.p
+        if not self.parent is None:
+            self.parent.update_sum()
+
+    def update_trans(self, trans: Transition) -> None:
+        assert not self.trans is None
+        self.trans = trans
+        trans.node = self
+        self.update_sum()
 
 class ReplayBufferIterator (Iterator):
     def __init__(self, buffer: list, begin: int) -> None:
@@ -45,10 +111,12 @@ class ReplayBufferIterator (Iterator):
 
 class ReplayBuffer:
     def __init__(self, size: int) -> None:
+        assert size > 0
         self.__capacity = size
         self.__size = 0
         self.__begin = 0
         self.__buffer: list[Transition] = []
+        self.__head: ReplayBufferNode = None
 
     def __len__(self) -> int:
         return self.__size
@@ -58,14 +126,26 @@ class ReplayBuffer:
 
     def append(self, transition: Transition) -> None:
         if self.__size < self.__capacity:
+            # Push to binary tree.
+            if self.__head is None:
+                self.__head = ReplayBufferNode(transition)
+            else:
+                self.__head.push(transition)
+            
+            # Append to buffer.
             self.__buffer.append(transition)
             self.__size += 1
         else:
+            # Update node.
+            node = self.__buffer[self.__begin].node
+            node.update_trans(transition)
+
+            # Replace the oldest item.
             self.__buffer[self.__begin] = transition
             self.__begin += 1
             if self.__begin >= self.__size:
                 self.__begin = 0
-
+            
     def clear(self):
         self.__size = 0
         self.__begin = 0
@@ -73,7 +153,14 @@ class ReplayBuffer:
 
     def sample(self, count: int) -> list[Transition]:
         assert 0 <= count <= self.__size
-        return random.sample(self.__buffer, count)
+        if config.Train.DDPG.PER.Enabled:
+            samples = []
+            for _ in range(count):
+                pos = random.uniform(0, self.__head.sum)
+                samples.append(self.__head.find(pos))
+        else:
+            samples = random.sample(self.__buffer, count)
+        return samples
 
     def to_serializable(self) -> Any:
         x = []

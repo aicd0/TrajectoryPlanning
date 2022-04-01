@@ -5,7 +5,7 @@ import torch
 # - train
 # - test
 # - debug
-Target = 'train'
+Target = 'test'
 
 class DataType:
     Numpy = np.float32
@@ -15,7 +15,7 @@ class Model:
     InitialWeight = 0.03
 
 class Train:
-    LoadFromPreviousSession = True
+    LoadFromPreviousSession = False
 
     class DDPG:
         BatchSize = 64
@@ -31,6 +31,11 @@ class Train:
         Tau = 0.001
         Warmup = 1000
 
+        class PER:
+            Enabled = True
+            Alpha = 0.5
+            K = 0.01
+
         class OUNoise:
             Mu = 0.0
             Sigma = 0.5
@@ -42,7 +47,7 @@ class Train:
 
     class HER:
         Enabled = True
-        K = 2
+        K = 4
 
 class Test:
     DetachAgent = False
