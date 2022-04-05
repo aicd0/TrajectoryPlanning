@@ -9,12 +9,6 @@ def hard_update(dst, src):
     for dst_param, src_param in zip(dst.parameters(), src.parameters()):
         dst_param.data.copy_(src_param.data)
 
-def random_point_in_hypersphere(dim: int, low: float=0, high: float=1) -> np.ndarray:
-    pt = np.random.uniform(-1, 1, dim)
-    pt /= np.linalg.norm(pt)
-    pt *= random.uniform(low**dim, high**dim) ** (1/dim)
-    return pt
-
 def period_map(val: float, low: float, high: float) -> float:
     span = high - low
     rel = val - low
@@ -25,3 +19,6 @@ def period_map(val: float, low: float, high: float) -> float:
 
 def linear_map(val: float, src_low: float, src_high: float, dst_low: float, dst_high) -> float:
     return (val - src_low) / (src_high - src_low) * (dst_high - dst_low) + dst_low
+
+def distance(pt1, pt2):
+    return np.linalg.norm(pt1 - pt2)

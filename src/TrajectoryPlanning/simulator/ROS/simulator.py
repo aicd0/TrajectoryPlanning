@@ -1,10 +1,12 @@
 import config
 import functools
 import numpy as np
+import random
 import rospy
 import threading
 import time
-import utils.math
+from framework.configuration import Configuration
+from math import pi
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
@@ -14,6 +16,20 @@ from geometry_msgs.msg import Point
 from robot_sim.srv import PlaceTarget, StepWorld
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
+
+class JointLimit:
+    class Joint0:
+        L = -pi
+        H = pi
+    class Joint1:
+        L = 0
+        H = pi/2
+    class Joint2:
+        L = 0
+        H = pi/2
+    class Joint3:
+        L = 0
+        H = pi/2
 
 class SpinThread (threading.Thread):
     def run(self):
@@ -53,8 +69,9 @@ class Simulator:
         if Simulator.__client_activated:
             raise Exception()
         Simulator.__client_activated = True
-        self.__startup = False
         self.__state = None
+        self.__desired = None
+        self.__configs = Configuration('ROS')
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -114,7 +131,8 @@ class Simulator:
         return self.__subscribers[name]
 
     def __step_world(self) -> None:
-        self.__get_service(ServiceLibrary.step_world)(config.Simulator.ROS.StepIterations)
+        step_iterations = self.__configs.get('StepIterations', config.Simulator.ROS.DefaultStepIterations)
+        self.__get_service(ServiceLibrary.step_world)(step_iterations)
         self.__state = None
 
     def __get_state(self) -> GameState:
@@ -134,33 +152,53 @@ class Simulator:
             
         return self.__state
 
-    def close(self):
+    def __step(self, joint_position: np.ndarray) -> None:
+        self.__get_publisher(TopicLibrary.joint0_com).publish(joint_position[0])
+        self.__get_publisher(TopicLibrary.joint1_com).publish(joint_position[1])
+        self.__get_publisher(TopicLibrary.joint2_com).publish(joint_position[2])
+        self.__get_publisher(TopicLibrary.joint3_com).publish(joint_position[3])
+        self.__step_world()
+
+    def __random_state(self) -> None:
+        while True:
+            random_joint_position = np.array([
+                random.uniform(JointLimit.Joint0.L, JointLimit.Joint0.H),
+                random.uniform(JointLimit.Joint1.L, JointLimit.Joint1.H),
+                random.uniform(JointLimit.Joint2.L, JointLimit.Joint2.H),
+                random.uniform(JointLimit.Joint3.L, JointLimit.Joint3.H),
+            ])
+            self.__step(random_joint_position)
+            random_state = self.__get_state()
+            if not random_state.collision:
+                break
+        
+    def close(self) -> None:
         self.__spin_thread.terminate()
         Simulator.__client_activated = False
 
     def reset(self) -> GameState:
-        self.__desired = utils.math.random_point_in_hypersphere(3, low=0.4, high=1.4)
-        self.__desired[2] += 2.0
-        if not self.__startup:
-            self.__step_world()
-            self.__startup = True
+        # Generate target point randomly.
+        self.__random_state()
+        self.__desired = self.__get_state().achieved
 
-        # Update target point.
+        # Notify Gazebo to update target point.
         pt = Point()
         pt.x = self.__desired[0]
         pt.y = self.__desired[1]
         pt.z = self.__desired[2]
         self.__get_service(ServiceLibrary.place_target)(pt)
 
+        # Randomly initialize robot.
+        self.__random_state()
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        target_position = self.__get_state().joint_position + action * config.Simulator.ROS.ActionAmp
-        self.__get_publisher(TopicLibrary.joint0_com).publish(target_position[0])
-        self.__get_publisher(TopicLibrary.joint1_com).publish(target_position[1])
-        self.__get_publisher(TopicLibrary.joint2_com).publish(target_position[2])
-        self.__get_publisher(TopicLibrary.joint3_com).publish(target_position[3])
-        self.__step_world()
+        action_amp = self.__configs.get('ActionAmp', config.Simulator.ROS.DefaultActionAmp)
+        last_position = self.__get_state().joint_position
+        this_position = last_position + action * action_amp
+        self.__step(this_position)
+        if self.__get_state().collision:
+            self.__step(last_position)
         return self.__get_state()
 
     def plot_reset(self) -> None:

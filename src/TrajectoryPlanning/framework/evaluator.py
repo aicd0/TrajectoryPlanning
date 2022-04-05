@@ -4,6 +4,7 @@ import numpy as np
 import utils.fileio
 import utils.print
 import utils.string_utils
+from framework.configuration import Configuration
 from framework.ddpg import Agent
 
 checkpoint_file = 'checkpoint.npz'
@@ -11,8 +12,12 @@ checkpoint_file = 'checkpoint.npz'
 class Evaluator(object):
     def __init__(self, agent: Agent=None):
         self.__agent = agent
-        self.__checkpoint_path = utils.string_utils.to_folder_path(config.Evaluator.CheckpointLocation)
-        self.__output_path = utils.string_utils.to_folder_path(config.Evaluator.OutputLocation)
+        self.__configs = Configuration('evaluator')
+        self.__save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir)
+        self.__save_dir = utils.string_utils.to_folder_path(self.__save_dir + agent.name)
+        self.__model_dir = utils.string_utils.to_folder_path(self.__save_dir + 'model')
+        self.__statistic_dir = utils.string_utils.to_folder_path(config.Evaluator.StatisticDir)
+        self.__statistic_dir = utils.string_utils.to_folder_path(self.__statistic_dir + agent.name)
         self.__iterations = 0
         self.__epoch_step_rewards = []
         self.__last_save_step = 0
@@ -46,7 +51,7 @@ class Evaluator(object):
         self.__iterations += 1
         self.__steps += 1
 
-    def epoch(self, save: bool=True) -> None:
+    def epoch(self, allow_save: bool = True) -> None:
         epoch_step_rewards = np.array(self.__epoch_step_rewards, dtype=config.DataType.Numpy)
         self.__epoches += 1
         self.__iterations = 0
@@ -59,7 +64,7 @@ class Evaluator(object):
         self.__y_step_reward_avg.append(np.mean(epoch_step_rewards))
         self.__y_step_reward_std.append(np.std(epoch_step_rewards))
 
-        win_size = config.Evaluator.EpochWindowSize
+        win_size = self.__configs.get('EpochWindowSize', config.Evaluator.DefaultEpochWindowSize)
         epoch_reward_window = np.array(self.__y_epoch_reward[len(self.__y_epoch_reward) - win_size:])
         step_reward_window = np.concatenate(self.__step_rewards[len(self.__step_rewards) - win_size:])
         self.__y_win_epoch_reward_avg.append(np.mean(epoch_reward_window))
@@ -67,10 +72,13 @@ class Evaluator(object):
         self.__y_win_step_reward_avg.append(np.mean(step_reward_window))
         self.__y_win_step_reward_std.append(np.std(step_reward_window))
 
-        allow_save = self.get_step() - self.__last_save_step >= config.Evaluator.MinSaveStepInterval
-        need_plot = self.get_epoch() - self.__last_plot_epoch >= config.Evaluator.Figure.MaxSaveEpochInterval
+        min_save_step_interval = self.__configs.get('MinSaveStepInterval', config.Evaluator.DefaultMinSaveStepInterval)
+        allow_save = allow_save and self.get_step() - self.__last_save_step >= min_save_step_interval
 
-        if save and allow_save and not self.__agent is None:
+        max_plot_epoch_interval = self.__configs.get('Figure/MaxSaveEpochInterval', config.Evaluator.Figure.DefaultMaxSaveEpochInterval)
+        need_plot = self.get_epoch() - self.__last_plot_epoch >= max_plot_epoch_interval
+
+        if allow_save and not self.__agent is None:
             save_val = self.__y_win_epoch_reward_avg[-1]
             if self.__max_save_val is None or save_val > self.__max_save_val:
                 self.__max_save_val = save_val
@@ -100,10 +108,12 @@ class Evaluator(object):
         return res_dict
 
     def plot(self) -> None:
-        utils.fileio.mktree(self.__output_path)
-        width = config.Evaluator.Figure.Width
-        height = config.Evaluator.Figure.Height
-        dpi = config.Evaluator.Figure.DPI
+        output_path = self.__statistic_dir
+        utils.fileio.mktree(output_path)
+
+        width = self.__configs.get('Figure/Width', config.Evaluator.Figure.DefaultWidth)
+        height = self.__configs.get('Figure/Height', config.Evaluator.Figure.DefaultHeight)
+        dpi = self.__configs.get('Figure/DPI', config.Evaluator.Figure.DefaultDPI)
 
         plt.figure(figsize=(width, height))
         plt.plot(self.__x_step, self.__y_win_epoch_reward_avg)
@@ -112,7 +122,7 @@ class Evaluator(object):
         plt.xlabel('Step')
         plt.ylabel('Reward')
         plt.tight_layout()
-        plt.savefig(self.__output_path + 'reward_epoch.png', dpi=dpi)
+        plt.savefig(output_path + 'reward_epoch.png', dpi=dpi)
         plt.close()
         
         plt.figure(figsize=(width, height))
@@ -122,15 +132,16 @@ class Evaluator(object):
         plt.xlabel('Step')
         plt.ylabel('Reward')
         plt.tight_layout()
-        plt.savefig(self.__output_path + 'reward_step.png', dpi=dpi)
+        plt.savefig(output_path + 'reward_step.png', dpi=dpi)
         plt.close()
 
     def save(self) -> None:
         if self.__agent is None:
             raise RuntimeError('Agent required.')
-        self.__agent.save(self.__checkpoint_path)
 
-        np.savez(self.__checkpoint_path + checkpoint_file,
+        self.__agent.save(self.__model_dir)
+
+        np.savez(self.__save_dir + checkpoint_file,
             epoches=self.__epoches,
             steps=self.__steps,
             max_save_val=self.__max_save_val,
@@ -150,10 +161,12 @@ class Evaluator(object):
     def load(self) -> None:
         if self.__agent is None:
             raise RuntimeError('Agent required.')
-        if not self.__agent.load(self.__checkpoint_path):
+
+        if not self.__agent.load(self.__model_dir):
             raise RuntimeError('Failed to load agent.')
         
-        checkpoint = np.load(self.__checkpoint_path + checkpoint_file, allow_pickle=True)
+        checkpoint = np.load(self.__save_dir + checkpoint_file, allow_pickle=True)
+
         self.__epoches = int(checkpoint['epoches'])
         self.__steps = int(checkpoint['steps'])
         self.__max_save_val = float(checkpoint['max_save_val'])

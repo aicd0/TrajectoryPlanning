@@ -1,4 +1,5 @@
 import config
+import framework.models
 import json
 import math
 import numpy as np
@@ -10,11 +11,12 @@ import utils.fileio
 import utils.math
 import utils.print
 import utils.string_utils
-from framework.model import Actor, Critic
+from framework.configuration import Configuration
 from framework.random_process import OrnsteinUhlenbeckProcess
 from framework.replay_buffer import ReplayBuffer
 from simulator import GameState
 
+config_file = 'config.txt'
 critic_checkpoint_file = 'critic'
 actor_checkpoint_file = 'actor'
 critic_targ_checkpoint_file = 'critic_targ'
@@ -22,47 +24,60 @@ actor_targ_checkpoint_file = 'actor_targ'
 replay_buffer_checkpoint_file = 'replay_buffer.txt'
 
 class Agent:
-    def __init__(self, dim_state: int, dim_action: int) -> None:
+    __agent_number = 1
+
+    def __init__(self, dim_state: int, dim_action: int, model: str, name: str = None) -> None:
+        if name is None:
+            self.name = 'Agent_' + str(Agent.__agent_number)
+            Agent.__agent_number += 1
+        else:
+            self.name = name
+
+        self.configs = Configuration('agent_' + self.name)
         self.dim_state = dim_state
         self.dim_action = dim_action
 
-        # Initialize critic network and actor network.
-        self.critic = Critic(dim_state, dim_action)
-        self.actor = Actor(dim_state, dim_action)
+        # Initialize networks.
+        self.critic = framework.models.create(model + '/critic', dim_state, dim_action)
+        self.actor = framework.models.create(model + '/actor', dim_state, dim_action)
+        self.critic_targ = framework.models.create(model + '/critic', dim_state, dim_action)
+        self.actor_targ = framework.models.create(model + '/actor', dim_state, dim_action)
+
+        utils.math.hard_update(self.critic_targ, self.critic) # make sure target is with the same weight.
+        utils.math.hard_update(self.actor_targ, self.actor)
+
+        # Initialize optimizers.
         self.__init_optimizer()
-
-        # Initialize target critic network and target actor network.
-        self.critic_targ = Critic(dim_state, dim_action)
-        self.actor_targ = Actor(dim_state, dim_action)
-
-        utils.math.hard_update(self.critic_targ, self.critic)
-        utils.math.hard_update(self.actor_targ, self.actor) # make sure target is with the same weight.
 
         # Initialize losses.
         self.critic_loss = nn.MSELoss()
 
         # Initialize the replay buffer.
-        self.replay_buffer = ReplayBuffer(config.Train.DDPG.ReplayBuffer)
+        self.replay_buffer = ReplayBuffer(self.configs.get('ReplayBuffer', config.Train.DDPG.DefaultReplayBuffer))
 
         # Initialize OU noise.
-        self.random_process = OrnsteinUhlenbeckProcess(size=dim_action,
-            theta=config.Train.DDPG.OUNoise.Theta, mu=config.Train.DDPG.OUNoise.Mu,
-            sigma=config.Train.DDPG.OUNoise.Sigma)
+        self.random_process = OrnsteinUhlenbeckProcess(size=self.dim_action,
+            theta=self.configs.get('OUNoise/Theta', config.Train.DDPG.OUNoise.DefaultTheta),
+            mu=self.configs.get('OUNoise/Mu', config.Train.DDPG.OUNoise.DefaultMu),
+            sigma=self.configs.get('OUNoise/Sigma', config.Train.DDPG.OUNoise.DefaultSigma))
 
     def __init_optimizer(self) -> None:
-        # Initialize optimizers.
-        self.critic_optim = optim.Adam(self.critic.parameters(), lr=config.Train.DDPG.LRCritic)
-        self.actor_optim = optim.Adam(self.actor.parameters(), lr=config.Train.DDPG.LRActor)
+        self.critic_optim = optim.Adam(self.critic.parameters(),
+            lr=self.configs.get('LRCritic', config.Train.DDPG.DefaultLRCritic))
+        self.actor_optim = optim.Adam(self.actor.parameters(),
+            lr=self.configs.get('LRActor', config.Train.DDPG.DefaultLRActor))
 
     def save(self, path: str) -> None:
         path = utils.string_utils.to_folder_path(path)
         utils.fileio.mktree(path)
         
+        # Save models.
         torch.save(self.critic.state_dict(), path + critic_checkpoint_file)
         torch.save(self.actor.state_dict(), path + actor_checkpoint_file)
         torch.save(self.critic_targ.state_dict(), path + critic_targ_checkpoint_file)
         torch.save(self.actor_targ.state_dict(), path + actor_targ_checkpoint_file)
 
+        # Save replay buffer.
         replay_buffer_checkpoint_file_path = path + replay_buffer_checkpoint_file
         replay_buffer_checkpoint_temp_file_path = replay_buffer_checkpoint_file_path + '.tmp'
         with open(replay_buffer_checkpoint_temp_file_path, 'w') as f:
@@ -72,25 +87,29 @@ class Agent:
             os.remove(replay_buffer_checkpoint_file_path)
         os.rename(replay_buffer_checkpoint_temp_file_path, replay_buffer_checkpoint_file_path)
 
-    def load(self, path: str, learning_enabled: bool=True) -> bool:
+    def load(self, path: str, learning_enabled: bool = True) -> bool:
+        # Check files.
         path = utils.string_utils.to_folder_path(path)
-        paths = [
-            path + critic_checkpoint_file,
-            path + actor_checkpoint_file,
-            path + critic_targ_checkpoint_file,
-            path + actor_targ_checkpoint_file,
-        ]
-        for p in paths:
+        paths = {
+            'critic': path + critic_checkpoint_file,
+            'actor': path + actor_checkpoint_file,
+            'critic_targ': path + critic_targ_checkpoint_file,
+            'actor_targ': path + actor_targ_checkpoint_file,
+            'replay_buffer': path + replay_buffer_checkpoint_file,
+        }
+        for p in paths.values():
             if not os.path.exists(p):
                 return False
 
-        self.critic.load_state_dict(torch.load(paths[0]))
-        self.actor.load_state_dict(torch.load(paths[1]))
-        self.critic_targ.load_state_dict(torch.load(paths[2]))
-        self.actor_targ.load_state_dict(torch.load(paths[3]))
+        # Load models.
+        self.critic.load_state_dict(torch.load(paths['critic']))
+        self.actor.load_state_dict(torch.load(paths['actor']))
+        self.critic_targ.load_state_dict(torch.load(paths['critic_targ']))
+        self.actor_targ.load_state_dict(torch.load(paths['actor_targ']))
 
+        # [optional] Load replay buffer.
         if learning_enabled:
-            with open(path + replay_buffer_checkpoint_file, 'r') as f:
+            with open(paths['replay_buffer'], 'r') as f:
                 tmp = json.load(f)
                 self.replay_buffer = ReplayBuffer.from_serializable(tmp, config.Train.DDPG.ReplayBuffer)
 
@@ -99,9 +118,11 @@ class Agent:
         return True
 
     def sample_random_action(self) -> np.ndarray:
-        return np.random.uniform(config.Train.DDPG.UniformNoise.Min, config.Train.DDPG.UniformNoise.Max, self.dim_action)
+        noise_min = self.configs.get('UniformNoise/Min', config.Train.DDPG.UniformNoise.DefaultMin)
+        noise_max = self.configs.get('UniformNoise/Max', config.Train.DDPG.UniformNoise.DefaultMax)
+        return np.random.uniform(noise_min, noise_max, self.dim_action)
 
-    def sample_action(self, state: GameState, noise_amount: float, detach: bool = False) -> np.ndarray:
+    def sample_action(self, state: GameState, noise_amount: float = -1, detach: bool = False) -> np.ndarray:
         state = torch.tensor(state.as_input(), dtype=config.DataType.Torch)
 
         if detach:
@@ -117,10 +138,11 @@ class Agent:
         return action
 
     def learn(self):
-        assert len(self.replay_buffer) >= config.Train.DDPG.BatchSize
+        batchsize = self.configs.get('batchsize', config.Train.DDPG.DefaultBatchSize)
+        assert len(self.replay_buffer) >= batchsize
 
         # Sample BatchSize transitions from replay buffer for optimization.
-        sampled_trans = self.replay_buffer.sample(config.Train.DDPG.BatchSize)
+        sampled_trans = self.replay_buffer.sample(batchsize)
 
         # Convert to ndarray.
         states = np.array([t.state.as_input() for t in sampled_trans], dtype=config.DataType.Numpy)
@@ -137,7 +159,8 @@ class Agent:
         # Optimize critic network.
         next_actions_targ = self.actor_targ(next_states)
         next_q_targ = self.critic_targ(next_states, next_actions_targ)
-        q_targ = rewards + config.Train.DDPG.Gamma * next_q_targ
+        gamma = self.configs.get('Gamma', config.Train.DDPG.DefaultGamma)
+        q_targ = rewards + gamma * next_q_targ
         q_pred = self.critic(states, actions)
         critic_loss = self.critic_loss(q_pred, q_targ)
 
@@ -161,14 +184,14 @@ class Agent:
         assert not math.isnan(actor_loss_val)
 
         # Update target networks.
-        Tau = config.Train.DDPG.Tau
+        Tau = self.configs.get('Tau', config.Train.DDPG.DefaultTau)
         utils.math.soft_update(self.actor_targ, self.actor, Tau)
         utils.math.soft_update(self.critic_targ, self.critic, Tau)
 
         # [optional] Update transition priority.
-        if config.Train.DDPG.PER.Enabled:
+        if self.configs.get('PER/Enabled', config.Train.DDPG.PER.DefaultEnabled):
             priorities = torch.abs(q_pred - q_targ).detach().numpy()
-            priorities **= config.Train.DDPG.PER.Alpha
-            priorities *= config.Train.DDPG.PER.K
+            priorities **= self.configs.get('PER/Alpha', config.Train.DDPG.PER.DefaultAlpha)
+            priorities *= self.configs.get('PER/K', config.Train.DDPG.PER.DefaultK)
             for i in range(len(sampled_trans)):
                 sampled_trans[i].p = float(priorities[i][0])

@@ -5,7 +5,9 @@ import torch
 # - train
 # - test
 # - debug
-Target = 'test'
+Target = 'debug'
+
+ConfigDir = 'output/configs'
 
 class DataType:
     Numpy = np.float32
@@ -18,36 +20,37 @@ class Train:
     LoadFromPreviousSession = False
 
     class DDPG:
-        BatchSize = 64
-        Epsilon = 20000
-        Gamma = 0.99
-        LRActor = 0.0001
-        LRCritic = 0.001
-        MaxEpoches = 200000
-        MaxIterations = 10000
         MinLogStepInterval = 500
-        NoiseEnabled = True
-        ReplayBuffer = 50000
-        Tau = 0.001
-        Warmup = 1000
+
+        DefaultBatchSize = 64
+        DefaultEpsilon = 40000
+        DefaultGamma = 0.99
+        DefaultLRActor = 0.0001
+        DefaultLRCritic = 0.001
+        DefaultMaxEpoches = 200000
+        DefaultMaxIterations = 10000
+        DefaultNoiseEnabled = True
+        DefaultReplayBuffer = 50000
+        DefaultTau = 0.001
+        DefaultWarmup = 2000
 
         class PER:
-            Enabled = True
-            Alpha = 0.5
-            K = 0.01
+            DefaultEnabled = True
+            DefaultAlpha = 0.5
+            DefaultK = 0.01
 
         class OUNoise:
-            Mu = 0.0
-            Sigma = 0.5
-            Theta = 0.15
+            DefaultMu = 0.0
+            DefaultSigma = 1.0
+            DefaultTheta = 0.15
 
         class UniformNoise:
-            Max = 1.0
-            Min = -1.0
+            DefaultMax = 1.0
+            DefaultMin = -1.0
 
     class HER:
-        Enabled = True
-        K = 4
+        DefaultEnabled = True
+        DefaultK = 4
 
 class Test:
     DetachAgent = False
@@ -56,16 +59,17 @@ class Test:
     MaxIterations = 10000
 
 class Evaluator:
-    CheckpointLocation = 'output/checkpoint'
-    OutputLocation = 'output/results'
-    EpochWindowSize = 20
-    MinSaveStepInterval = 1000
+    SaveDir = 'output/checkpoint'
+    StatisticDir = 'output/statistics'
+
+    DefaultEpochWindowSize = 20
+    DefaultMinSaveStepInterval = 1000
 
     class Figure:
-        DPI = 300
-        Height = 5
-        Width = 9
-        MaxSaveEpochInterval = 10
+        DefaultDPI = 300
+        DefaultHeight = 5
+        DefaultWidth = 9
+        DefaultMaxSaveEpochInterval = 10
 
 class Simulator:
     # Valid platforms:
@@ -90,8 +94,7 @@ class Simulator:
         OutputLocation = 'output/matlab'
 
     class ROS:
-        DynamicEnabled = False
-        ActionAmp = 0.1
-
-        # Only make a difference when dynamic is enabled.
-        StepIterations = 50
+        DynamicEnabled = False # has to be False
+        
+        DefaultActionAmp = 0.1
+        DefaultStepIterations = 50 # has to be consistent to sensor frequencies

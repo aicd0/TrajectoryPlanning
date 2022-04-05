@@ -1,6 +1,8 @@
 import config
 
-if config.Target == 'train':
+if False:
+    pass
+elif config.Target == 'train':
     from . import train as target
 elif config.Target == 'test':
     from . import test as target

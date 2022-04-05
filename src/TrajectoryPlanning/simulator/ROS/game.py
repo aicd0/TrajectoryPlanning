@@ -1,4 +1,5 @@
 import numpy as np
+import utils.math
 from simulator.ROS.game_state import GameState
 from typing import Tuple
 
@@ -6,19 +7,20 @@ class Game:
     def __init__(self) -> None:
         pass
 
-    def __distance2reward(self, d: float) -> float:
-        return 10 / (d * 5 + 1)
-
     def __update(self, action: np.ndarray, state: GameState) -> None:
         self.__reward = 0
-        self.__done = False#state.collision
+        self.__done = False
 
         if self.__done:
             return
 
+        if state.collision:
+            self.__reward = 0
+            return
+
         # Calculate the distance to the target point.
-        d = np.linalg.norm(state.achieved - state.desired)
-        self.__reward = self.__distance2reward(d)
+        d = utils.math.distance(state.achieved, state.desired)
+        self.__reward = Game.__distance2reward(d)
 
     def reset(self) -> None:
         self.__steps = 0
@@ -29,3 +31,7 @@ class Game:
         if self.__steps >= 100:
             self.__done = True
         return self.__reward, self.__done
+
+    @staticmethod
+    def __distance2reward(d: float) -> float:
+        return 10 / (d * 5 + 1)

@@ -4,6 +4,7 @@ import time
 import utils.print
 import utils.string_utils
 from copy import copy
+from framework.configuration import Configuration
 from framework.ddpg import Agent
 from framework.evaluator import Evaluator
 from framework.replay_buffer import Transition
@@ -37,7 +38,7 @@ def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]
     
     return res
 
-def main():
+def main(configs: Configuration):
     sim = Simulator()
     game = Game()
     
@@ -47,7 +48,7 @@ def main():
     dim_state = state.dim_state()
 
     # Initialize the agent.
-    agent = Agent(dim_state, dim_action)
+    agent = Agent(dim_state, dim_action, 'controller')
 
     # Load evaluator.
     evaluator = Evaluator(agent)
@@ -57,24 +58,31 @@ def main():
     last_update_time = time.time()
     last_log_step = 0
 
-    while evaluator.get_epoch() <= config.Train.DDPG.MaxEpoches:
+    # Load from configs.
+    max_epoches = configs.get('MaxEpoches', config.Train.DDPG.DefaultMaxEpoches)
+    max_iters = configs.get('MaxIterations', config.Train.DDPG.DefaultMaxIterations)
+    noise_enabled = configs.get('NoiseEnabled', config.Train.DDPG.DefaultNoiseEnabled)
+    warmup = configs.get('Warmup', config.Train.DDPG.DefaultWarmup)
+    epsilon = configs.get('Epsilon', config.Train.DDPG.DefaultEpsilon)
+    her_enabled = configs.get('HER/Enabled', config.Train.HER.DefaultEnabled)
+    
+    while evaluator.get_epoch() <= max_epoches:
         epoch_replay_buffer: list[Transition] = []
         game.reset()
         state = sim.reset()
         done = False
 
-        while not done and evaluator.get_iteration() <= config.Train.DDPG.MaxIterations:
+        while not done and evaluator.get_iteration() <= max_iters:
             step = evaluator.get_step()
 
             # Sample an action and perform.
-            if step < config.Train.DDPG.Warmup:
+            if step < warmup:
                 action = agent.sample_random_action()
             else:
-                if config.Train.DDPG.NoiseEnabled:
-                    noise_amount = 1 - step / config.Train.DDPG.Epsilon
+                if noise_enabled:
+                    noise_amount = 1 - step / epsilon
                 else:
                     noise_amount = -1
-
                 action = agent.sample_action(state, noise_amount=noise_amount)
 
             next_state = sim.step(action)
@@ -86,7 +94,7 @@ def main():
             epoch_replay_buffer.append(trans)
     
             # [optional] Optimize & save the agent.
-            if step >= config.Train.DDPG.Warmup:
+            if step >= warmup:
                 agent.learn()
                 
             state = next_state
@@ -98,12 +106,12 @@ def main():
                 last_update_time = time.time()
         
         # [optional] Perform HER.
-        if config.Train.HER.Enabled:
+        if her_enabled:
             epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer)
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 
-        evaluator.epoch(save=step >= config.Train.DDPG.Warmup * 2)
+        evaluator.epoch(save=step >= warmup * 2)
 
         # [optional] Evaluate.
         if (step - last_log_step) >= config.Train.DDPG.MinLogStepInterval:

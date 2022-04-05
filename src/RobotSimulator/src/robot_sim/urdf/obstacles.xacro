@@ -7,6 +7,44 @@
   <!-- Base link -->
   <link name="world"/>
 
+  <!-- Table -->
+  <joint name="joint_table" type="fixed">
+    <parent link="world"/>
+    <child link="table"/>
+    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+  </joint>
+
+  <link name="table">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="1 1 1" />
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="1 1 1" />
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="table">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <!-- Obj 1 -->
   <joint name="obj1_joint" type="fixed">
     <parent link="world"/>
     <child link="obj1"/>
@@ -14,22 +52,22 @@
 
   <link name="obj1">
     <collision>
-      <origin xyz="0.5 0 2" rpy="0 0 0"/>
+      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
       <geometry>
-	      <box size="0.5 0.5 0.5"/>
+	      <box size="0.302 0.302 4"/>
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="0.5 0 2" rpy="0 0 0"/>
+      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
       <geometry>
-	      <box size="0.5 0.5 0.5"/>
+	      <box size="0.302 0.302 4"/>
       </geometry>
-      <material name="blue"/>
+      <material name="white"/>
     </visual>
 
     <inertial>
-      <origin xyz="0.5 0 2" rpy="0 0 0"/>
+      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
       <mass value="1.0"/>
       <inertia
         ixx="1.0" ixy="0.0" ixz="0.0"
@@ -39,7 +77,115 @@
   </link>
 
   <gazebo reference="obj1">
-    <material>Gazebo/Blue</material>
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <!-- Obj 2 -->
+  <joint name="obj2_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj2"/>
+  </joint>
+
+  <link name="obj2">
+    <collision>
+      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj2">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <!-- Obj 3 -->
+  <joint name="obj3_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj3"/>
+  </joint>
+
+  <link name="obj3">
+    <collision>
+      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj3">
+    <material>Gazebo/White</material>
+  </gazebo>
+
+  <!-- Obj 4 -->
+  <joint name="obj4_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj4"/>
+  </joint>
+
+  <link name="obj4">
+    <collision>
+      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.302 0.302 4"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj4">
+    <material>Gazebo/White</material>
   </gazebo>
 
 </robot>
