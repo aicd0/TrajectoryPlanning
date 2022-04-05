@@ -4,13 +4,13 @@ import time
 import utils.print
 import utils.string_utils
 from copy import copy
-from framework.configuration import Configuration
+from framework.configuration import global_configs as configs
 from framework.ddpg import Agent
 from framework.evaluator import Evaluator
 from framework.replay_buffer import Transition
 from simulator import Game, Simulator
 
-def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]:
+def augment_replay_buffered(replay_buffer: list[Transition], k: int) -> list[Transition]:
     res: list[Transition] = []
     game = Game()
     game.reset()
@@ -18,7 +18,7 @@ def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]
     for i, trans in enumerate(replay_buffer):
         # Sample k transitions after this transition as new goals.
         sample_src = replay_buffer[i + 1:]
-        sample_count = min(config.Train.HER.K, len(sample_src))
+        sample_count = min(k, len(sample_src))
         sampled_trans = random.sample(sample_src, sample_count)
         
         # Generate a new transition for each goal.
@@ -38,7 +38,7 @@ def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]
     
     return res
 
-def main(configs: Configuration):
+def main():
     sim = Simulator()
     game = Game()
     
@@ -59,12 +59,13 @@ def main(configs: Configuration):
     last_log_step = 0
 
     # Load from configs.
-    max_epoches = configs.get('MaxEpoches', config.Train.DDPG.DefaultMaxEpoches)
-    max_iters = configs.get('MaxIterations', config.Train.DDPG.DefaultMaxIterations)
-    noise_enabled = configs.get('NoiseEnabled', config.Train.DDPG.DefaultNoiseEnabled)
-    warmup = configs.get('Warmup', config.Train.DDPG.DefaultWarmup)
-    epsilon = configs.get('Epsilon', config.Train.DDPG.DefaultEpsilon)
-    her_enabled = configs.get('HER/Enabled', config.Train.HER.DefaultEnabled)
+    max_epoches = configs.get(config.Train.DDPG.FieldMaxEpoches)
+    max_iters = configs.get(config.Train.DDPG.FieldMaxIterations)
+    noise_enabled = configs.get(config.Train.DDPG.FieldNoiseEnabled)
+    warmup = configs.get(config.Train.DDPG.FieldWarmup)
+    epsilon = configs.get(config.Train.DDPG.FieldEpsilon)
+    her_enabled = configs.get(config.Train.HER.FieldEnabled)
+    her_k = configs.get(config.Train.HER.FieldK)
     
     while evaluator.get_epoch() <= max_epoches:
         epoch_replay_buffer: list[Transition] = []
@@ -107,11 +108,11 @@ def main(configs: Configuration):
         
         # [optional] Perform HER.
         if her_enabled:
-            epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer)
+            epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer, her_k)
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 
-        evaluator.epoch(save=step >= warmup * 2)
+        evaluator.epoch(allow_save=step >= warmup * 2)
 
         # [optional] Evaluate.
         if (step - last_log_step) >= config.Train.DDPG.MinLogStepInterval:

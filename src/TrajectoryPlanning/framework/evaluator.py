@@ -7,17 +7,15 @@ import utils.string_utils
 from framework.configuration import Configuration
 from framework.ddpg import Agent
 
-checkpoint_file = 'checkpoint.npz'
+checkpoint_file = 'statistics.npz'
 
 class Evaluator(object):
-    def __init__(self, agent: Agent=None):
+    def __init__(self, agent: Agent):
         self.__agent = agent
-        self.__configs = Configuration('evaluator')
-        self.__save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir)
-        self.__save_dir = utils.string_utils.to_folder_path(self.__save_dir + agent.name)
+        self.__configs = Configuration('evaluator_' + agent.name)
+        self.__save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir + agent.name)
         self.__model_dir = utils.string_utils.to_folder_path(self.__save_dir + 'model')
-        self.__statistic_dir = utils.string_utils.to_folder_path(config.Evaluator.StatisticDir)
-        self.__statistic_dir = utils.string_utils.to_folder_path(self.__statistic_dir + agent.name)
+        self.__statistic_dir = utils.string_utils.to_folder_path(config.Evaluator.StatisticDir + agent.name)
         self.__iterations = 0
         self.__epoch_step_rewards = []
         self.__last_save_step = 0
@@ -64,7 +62,7 @@ class Evaluator(object):
         self.__y_step_reward_avg.append(np.mean(epoch_step_rewards))
         self.__y_step_reward_std.append(np.std(epoch_step_rewards))
 
-        win_size = self.__configs.get('EpochWindowSize', config.Evaluator.DefaultEpochWindowSize)
+        win_size = self.__configs.get(config.Evaluator.FieldEpochWindowSize)
         epoch_reward_window = np.array(self.__y_epoch_reward[len(self.__y_epoch_reward) - win_size:])
         step_reward_window = np.concatenate(self.__step_rewards[len(self.__step_rewards) - win_size:])
         self.__y_win_epoch_reward_avg.append(np.mean(epoch_reward_window))
@@ -72,10 +70,10 @@ class Evaluator(object):
         self.__y_win_step_reward_avg.append(np.mean(step_reward_window))
         self.__y_win_step_reward_std.append(np.std(step_reward_window))
 
-        min_save_step_interval = self.__configs.get('MinSaveStepInterval', config.Evaluator.DefaultMinSaveStepInterval)
+        min_save_step_interval = self.__configs.get(config.Evaluator.FieldMinSaveStepInterval)
         allow_save = allow_save and self.get_step() - self.__last_save_step >= min_save_step_interval
 
-        max_plot_epoch_interval = self.__configs.get('Figure/MaxSaveEpochInterval', config.Evaluator.Figure.DefaultMaxSaveEpochInterval)
+        max_plot_epoch_interval = self.__configs.get(config.Evaluator.Figure.FieldMaxSaveEpochInterval)
         need_plot = self.get_epoch() - self.__last_plot_epoch >= max_plot_epoch_interval
 
         if allow_save and not self.__agent is None:
@@ -111,9 +109,9 @@ class Evaluator(object):
         output_path = self.__statistic_dir
         utils.fileio.mktree(output_path)
 
-        width = self.__configs.get('Figure/Width', config.Evaluator.Figure.DefaultWidth)
-        height = self.__configs.get('Figure/Height', config.Evaluator.Figure.DefaultHeight)
-        dpi = self.__configs.get('Figure/DPI', config.Evaluator.Figure.DefaultDPI)
+        width = self.__configs.get(config.Evaluator.Figure.FieldWidth)
+        height = self.__configs.get(config.Evaluator.Figure.FieldHeight)
+        dpi = self.__configs.get(config.Evaluator.Figure.FieldDPI)
 
         plt.figure(figsize=(width, height))
         plt.plot(self.__x_step, self.__y_win_epoch_reward_avg)
@@ -136,11 +134,10 @@ class Evaluator(object):
         plt.close()
 
     def save(self) -> None:
-        if self.__agent is None:
-            raise RuntimeError('Agent required.')
-
+        # Save model.
         self.__agent.save(self.__model_dir)
 
+        # Save statistics.
         np.savez(self.__save_dir + checkpoint_file,
             epoches=self.__epoches,
             steps=self.__steps,
@@ -158,13 +155,12 @@ class Evaluator(object):
 
         utils.print.put('Checkpoint saved at %f' % self.__max_save_val)
 
-    def load(self) -> None:
-        if self.__agent is None:
-            raise RuntimeError('Agent required.')
-
-        if not self.__agent.load(self.__model_dir):
+    def load(self, learning_enabled=True) -> None:
+        # Load model.
+        if not self.__agent.load(self.__model_dir, learning_enabled=learning_enabled):
             raise RuntimeError('Failed to load agent.')
         
+        # Load statistics.
         checkpoint = np.load(self.__save_dir + checkpoint_file, allow_pickle=True)
 
         self.__epoches = int(checkpoint['epoches'])

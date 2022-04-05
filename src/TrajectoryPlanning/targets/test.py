@@ -2,7 +2,9 @@ import config
 import numpy as np
 import utils.print
 import utils.string_utils
+from framework.configuration import global_configs as configs
 from framework.ddpg import Agent
+from framework.evaluator import Evaluator
 from simulator import Game, Simulator
 
 def main():
@@ -13,8 +15,9 @@ def main():
     dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
-    agent = Agent(dim_state, dim_action)
-    agent.load(config.Evaluator.CheckpointLocation, learning_enabled=False)
+    agent = Agent(dim_state, dim_action, 'controller')
+    evaluator = Evaluator(agent)
+    evaluator.load(learning_enabled=False)
 
     game = Game()
     step_rewards = []

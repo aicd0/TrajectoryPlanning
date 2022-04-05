@@ -1,6 +1,7 @@
 import config
 import numpy as np
 import random
+from framework.configuration import Configuration
 from simulator import GameState
 from typing import Any, Iterator
 
@@ -110,9 +111,10 @@ class ReplayBufferIterator (Iterator):
         return self.__buffer[i]
 
 class ReplayBuffer:
-    def __init__(self, size: int) -> None:
-        assert size > 0
-        self.__capacity = size
+    def __init__(self, configs: Configuration) -> None:
+        self.__configs = configs
+        self.__capacity = self.__configs.get(config.Train.DDPG.FieldReplayBuffer)
+        assert self.__capacity > 0
         self.__size = 0
         self.__begin = 0
         self.__buffer: list[Transition] = []
@@ -153,7 +155,8 @@ class ReplayBuffer:
 
     def sample(self, count: int) -> list[Transition]:
         assert 0 <= count <= self.__size
-        if config.Train.DDPG.PER.Enabled:
+        per_enabled = self.__configs.get(config.Train.DDPG.PER.FieldEnabled)
+        if per_enabled:
             samples = []
             for _ in range(count):
                 pos = random.uniform(0, self.__head.sum)

@@ -5,8 +5,7 @@ from targets import target
 
 def main():
     utils.platform.check_platform()
-    configs = Configuration(config.Target)
-    target.main(configs)
+    target.main()
 
 if __name__ == '__main__':
     main()

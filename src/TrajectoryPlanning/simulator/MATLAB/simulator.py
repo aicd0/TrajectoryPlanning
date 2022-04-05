@@ -3,6 +3,7 @@ import matlab
 import numpy as np
 import utils.fileio
 import utils.string_utils
+from framework.configuration import global_configs as configs
 from simulator.MATLAB.engine import Connector
 from simulator.MATLAB.game_state import GameState
 
@@ -14,7 +15,7 @@ class Simulator:
         self.eng = connector.engine()
 
         # Robot initialization.
-        output_dir = utils.string_utils.to_folder_path(config.Simulator.MATLAB.OutputLocation)
+        output_dir = config.Simulator.MATLAB.OutputDir
         utils.fileio.mktree(output_dir)
         self.eng.workspace['output_dir'] = output_dir
         self.eng.simInit(nargout=0)

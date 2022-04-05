@@ -8,27 +8,27 @@ if utils.platform.is_windows():
 import config
 import gym
 import numpy as np
-from gym.spaces import Dict, Discrete
-from simulator.gym.game import Game
+from framework.configuration import global_configs as configs
+from gym.spaces import Discrete
 from simulator.gym.game_state import GameState
 
 class Simulator:
     def __init__(self):
-        self.env = gym.make(config.Simulator.Gym.Environment)
+        self.__env = gym.make(configs.get(config.Simulator.Gym.FieldEnvironment))
 
         # Analyse action space
-        self.action_discrete = isinstance(self.env.action_space, Discrete)
+        self.action_discrete = isinstance(self.__env.action_space, Discrete)
         if self.action_discrete:
             self.__dim_action = 1
-            self.n_action = self.env.action_space.n
+            self.n_action = self.__env.action_space.n
         else:
-            self.__dim_action = self.env.action_space.shape[0]
+            self.__dim_action = self.__env.action_space.shape[0]
 
     def close(self):
-        self.env.close()
+        self.__env.close()
 
     def reset(self) -> GameState:
-        state_raw = self.env.reset()
+        state_raw = self.__env.reset()
         game_state = GameState()
         game_state.from_reset(state_raw)
         return game_state
@@ -37,7 +37,7 @@ class Simulator:
         if self.action_discrete:
             action = np.clip(int((action[0] + 1) / 2 * self.n_action), 0, self.n_action - 1)
 
-        state, reward_raw, done, _ = self.env.step(action)
+        state, reward_raw, done, _ = self.__env.step(action)
         game_state = GameState()
         game_state.from_step(state, reward_raw, done)
         return game_state
@@ -46,7 +46,7 @@ class Simulator:
         pass
 
     def plot_step(self) -> None:
-        self.env.render(mode='human')
+        self.__env.render(mode='human')
 
     def dim_action(self) -> int:
         return self.__dim_action

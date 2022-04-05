@@ -5,7 +5,7 @@ import random
 import rospy
 import threading
 import time
-from framework.configuration import Configuration
+from framework.configuration import global_configs as configs
 from math import pi
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
@@ -71,7 +71,6 @@ class Simulator:
         Simulator.__client_activated = True
         self.__state = None
         self.__desired = None
-        self.__configs = Configuration('ROS')
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -131,7 +130,7 @@ class Simulator:
         return self.__subscribers[name]
 
     def __step_world(self) -> None:
-        step_iterations = self.__configs.get('StepIterations', config.Simulator.ROS.DefaultStepIterations)
+        step_iterations = configs.get(config.Simulator.ROS.FieldStepIterations)
         self.__get_service(ServiceLibrary.step_world)(step_iterations)
         self.__state = None
 
@@ -193,7 +192,7 @@ class Simulator:
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = self.__configs.get('ActionAmp', config.Simulator.ROS.DefaultActionAmp)
+        action_amp = configs.get(config.Simulator.ROS.FieldActionAmp)
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)

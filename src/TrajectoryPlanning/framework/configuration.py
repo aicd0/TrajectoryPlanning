@@ -3,15 +3,17 @@ import json
 import os
 import utils.fileio
 import utils.string_utils
-from typing import Any
+from typing import Any, Tuple
 
 class Configuration:
     def __init__(self, name: str) -> None:
         self.__configs = {}
-        self.__file_path = utils.string_utils.to_folder_path(config.ConfigDir) + name + '.txt'
+        self.__file_path = config.ConfigDir + name + '.txt'
         self.__load()
 
-    def get(self, key: str, default: Any) -> Any:
+    def get(self, field: Tuple) -> Any:
+        key = field[0]
+        default = field[1]
         if key in self.__configs:
             return self.__configs[key]
         self.__configs[key] = default
@@ -30,3 +32,5 @@ class Configuration:
         with open(self.__file_path, 'r') as f:
             self.__configs = json.load(f)
         return True
+
+global_configs = Configuration('global')

@@ -1,5 +1,6 @@
 import config
 import numpy as np
+from framework.configuration import global_configs as configs
 from simulator.gym.game_state import GameState
 from typing import Tuple
 
@@ -8,7 +9,8 @@ class Game:
         pass
 
     def __state2reward(self, state: GameState):
-        env_name = config.Simulator.Gym.Environment
+        env_name = configs.get(config.Simulator.Gym.FieldEnvironment)
+        
         if env_name == 'CartPole-v0':
             return -1 if state.done else 1
         if env_name == 'CartPole-v1':

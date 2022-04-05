@@ -53,19 +53,19 @@ class Agent:
         self.critic_loss = nn.MSELoss()
 
         # Initialize the replay buffer.
-        self.replay_buffer = ReplayBuffer(self.configs.get('ReplayBuffer', config.Train.DDPG.DefaultReplayBuffer))
+        self.replay_buffer = ReplayBuffer(self.configs)
 
         # Initialize OU noise.
         self.random_process = OrnsteinUhlenbeckProcess(size=self.dim_action,
-            theta=self.configs.get('OUNoise/Theta', config.Train.DDPG.OUNoise.DefaultTheta),
-            mu=self.configs.get('OUNoise/Mu', config.Train.DDPG.OUNoise.DefaultMu),
-            sigma=self.configs.get('OUNoise/Sigma', config.Train.DDPG.OUNoise.DefaultSigma))
+            theta=self.configs.get(config.Train.DDPG.OUNoise.FieldTheta),
+            mu=self.configs.get(config.Train.DDPG.OUNoise.FieldMu),
+            sigma=self.configs.get(config.Train.DDPG.OUNoise.FieldSigma))
 
     def __init_optimizer(self) -> None:
         self.critic_optim = optim.Adam(self.critic.parameters(),
-            lr=self.configs.get('LRCritic', config.Train.DDPG.DefaultLRCritic))
+            lr=self.configs.get(config.Train.DDPG.FieldLRCritic))
         self.actor_optim = optim.Adam(self.actor.parameters(),
-            lr=self.configs.get('LRActor', config.Train.DDPG.DefaultLRActor))
+            lr=self.configs.get(config.Train.DDPG.FieldLRActor))
 
     def save(self, path: str) -> None:
         path = utils.string_utils.to_folder_path(path)
@@ -118,8 +118,8 @@ class Agent:
         return True
 
     def sample_random_action(self) -> np.ndarray:
-        noise_min = self.configs.get('UniformNoise/Min', config.Train.DDPG.UniformNoise.DefaultMin)
-        noise_max = self.configs.get('UniformNoise/Max', config.Train.DDPG.UniformNoise.DefaultMax)
+        noise_min = self.configs.get(config.Train.DDPG.UniformNoise.FieldMin)
+        noise_max = self.configs.get(config.Train.DDPG.UniformNoise.FieldMax)
         return np.random.uniform(noise_min, noise_max, self.dim_action)
 
     def sample_action(self, state: GameState, noise_amount: float = -1, detach: bool = False) -> np.ndarray:
@@ -138,7 +138,7 @@ class Agent:
         return action
 
     def learn(self):
-        batchsize = self.configs.get('batchsize', config.Train.DDPG.DefaultBatchSize)
+        batchsize = self.configs.get(config.Train.DDPG.FieldBatchSize)
         assert len(self.replay_buffer) >= batchsize
 
         # Sample BatchSize transitions from replay buffer for optimization.
@@ -159,7 +159,7 @@ class Agent:
         # Optimize critic network.
         next_actions_targ = self.actor_targ(next_states)
         next_q_targ = self.critic_targ(next_states, next_actions_targ)
-        gamma = self.configs.get('Gamma', config.Train.DDPG.DefaultGamma)
+        gamma = self.configs.get(config.Train.DDPG.FieldGamma)
         q_targ = rewards + gamma * next_q_targ
         q_pred = self.critic(states, actions)
         critic_loss = self.critic_loss(q_pred, q_targ)
@@ -184,14 +184,14 @@ class Agent:
         assert not math.isnan(actor_loss_val)
 
         # Update target networks.
-        Tau = self.configs.get('Tau', config.Train.DDPG.DefaultTau)
+        Tau = self.configs.get(config.Train.DDPG.FieldTau)
         utils.math.soft_update(self.actor_targ, self.actor, Tau)
         utils.math.soft_update(self.critic_targ, self.critic, Tau)
 
         # [optional] Update transition priority.
-        if self.configs.get('PER/Enabled', config.Train.DDPG.PER.DefaultEnabled):
+        if self.configs.get(config.Train.DDPG.PER.FieldEnabled):
             priorities = torch.abs(q_pred - q_targ).detach().numpy()
-            priorities **= self.configs.get('PER/Alpha', config.Train.DDPG.PER.DefaultAlpha)
-            priorities *= self.configs.get('PER/K', config.Train.DDPG.PER.DefaultK)
+            priorities **= self.configs.get(config.Train.DDPG.PER.FieldAlpha)
+            priorities *= self.configs.get(config.Train.DDPG.PER.FieldK)
             for i in range(len(sampled_trans)):
                 sampled_trans[i].p = float(priorities[i][0])

@@ -1,5 +1,6 @@
 import config
 import numpy as np
+from framework.configuration import global_configs as configs
 from simulator.game_state import GameStateBase
 from typing import Any
 
@@ -11,7 +12,7 @@ class GameState (GameStateBase):
         self.done = None
 
     def __from_raw_state(self, state_raw):
-        env_name = config.Simulator.Gym.Environment
+        env_name = configs.get(config.Simulator.Gym.FieldEnvironment)
 
         if env_name == 'FetchReach-v1':
             self.achieved = state_raw['achieved_goal']

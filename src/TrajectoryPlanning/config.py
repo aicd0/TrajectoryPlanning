@@ -1,13 +1,15 @@
 import numpy as np
 import torch
+import utils.string_utils
 
 # Valid targets:
 # - train
 # - test
 # - debug
-Target = 'debug'
+Target = 'train'
 
-ConfigDir = 'output/configs'
+OutputDir = 'output/gym'
+ConfigDir = 'configs'
 
 class DataType:
     Numpy = np.float32
@@ -21,36 +23,35 @@ class Train:
 
     class DDPG:
         MinLogStepInterval = 500
-
-        DefaultBatchSize = 64
-        DefaultEpsilon = 40000
-        DefaultGamma = 0.99
-        DefaultLRActor = 0.0001
-        DefaultLRCritic = 0.001
-        DefaultMaxEpoches = 200000
-        DefaultMaxIterations = 10000
-        DefaultNoiseEnabled = True
-        DefaultReplayBuffer = 50000
-        DefaultTau = 0.001
-        DefaultWarmup = 2000
+        FieldBatchSize = ('Train/DDPG/BatchSize', 64)
+        FieldEpsilon = ('Train/DDPG/Epsilon', 20000)
+        FieldGamma = ('Train/DDPG/Gamma', 0.99)
+        FieldLRActor = ('Train/DDPG/LRActor', 0.0001)
+        FieldLRCritic = ('Train/DDPG/LRCritic', 0.001)
+        FieldMaxEpoches = ('Train/DDPG/MaxEpoches', 200000)
+        FieldMaxIterations = ('Train/DDPG/MaxIterations', 10000)
+        FieldNoiseEnabled = ('Train/DDPG/NoiseEnabled', True)
+        FieldReplayBuffer = ('Train/DDPG/ReplayBuffer', 50000)
+        FieldTau = ('Train/DDPG/Tau', 0.001)
+        FieldWarmup = ('Train/DDPG/Warmup', 1000)
 
         class PER:
-            DefaultEnabled = True
-            DefaultAlpha = 0.5
-            DefaultK = 0.01
+            FieldEnabled = ('Train/DDPG/PER/Enabled', False)
+            FieldAlpha = ('Train/DDPG/PER/Alpha', 0.5)
+            FieldK = ('Train/DDPG/PER/K', 0.01)
 
         class OUNoise:
-            DefaultMu = 0.0
-            DefaultSigma = 1.0
-            DefaultTheta = 0.15
+            FieldMu = ('Train/DDPG/OUNoise/Mu', 0.0)
+            FieldSigma = ('Train/DDPG/OUNoise/Sigma', 0.4)
+            FieldTheta = ('Train/DDPG/OUNoise/Theta', 0.15)
 
         class UniformNoise:
-            DefaultMax = 1.0
-            DefaultMin = -1.0
+            FieldMax = ('Train/DDPG/UniformNoise/Max', 1.0)
+            FieldMin = ('Train/DDPG/UniformNoise/Min', -1.0)
 
     class HER:
-        DefaultEnabled = True
-        DefaultK = 4
+        FieldEnabled = ('Train/HER/Enabled', True)
+        FieldK = ('Train/HER/K', 4)
 
 class Test:
     DetachAgent = False
@@ -59,24 +60,23 @@ class Test:
     MaxIterations = 10000
 
 class Evaluator:
-    SaveDir = 'output/checkpoint'
-    StatisticDir = 'output/statistics'
-
-    DefaultEpochWindowSize = 20
-    DefaultMinSaveStepInterval = 1000
+    SaveDir = 'checkpoint'
+    StatisticDir = 'statistics'
+    FieldEpochWindowSize = ('Evaluator/EpochWindowSize', 20)
+    FieldMinSaveStepInterval = ('Evaluator/MinSaveStepInterval', 1000)
 
     class Figure:
-        DefaultDPI = 300
-        DefaultHeight = 5
-        DefaultWidth = 9
-        DefaultMaxSaveEpochInterval = 10
+        FieldDPI = ('Evaluator/Figure/DPI', 300)
+        FieldHeight = ('Evaluator/Figure/Height', 5)
+        FieldWidth = ('Evaluator/Figure/Width', 9)
+        FieldMaxSaveEpochInterval = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
 
 class Simulator:
     # Valid platforms:
     # - matlab
     # - gym
     # - ros
-    Platform = 'ros'
+    FieldPlatform = ('Simulator/Platform', 'gym')
 
     class Gym:
         # These environments have been tested and work fine:
@@ -84,17 +84,23 @@ class Simulator:
         # - CartPole-v1
         # - FetchReach-v1
         # - Pendulum-v1
-        Environment = 'FetchReach-v1'
+        FieldEnvironment = ('Simulator/Gym/Environment', 'FetchReach-v1')
 
         # This option is only for Windows user.
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin'
 
     class MATLAB:
         SessionFile = '../../output/MatlabLauncher/session.txt'
-        OutputLocation = 'output/matlab'
+        OutputDir = 'MATLAB'
 
     class ROS:
         DynamicEnabled = False # has to be False
-        
-        DefaultActionAmp = 0.1
-        DefaultStepIterations = 50 # has to be consistent to sensor frequencies
+        FieldActionAmp = ('Simulator/ROS/ActionAmp', 0.1)
+        FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be consistent to sensor frequencies
+
+# Initializations
+OutputDir = utils.string_utils.to_folder_path(OutputDir)
+ConfigDir = utils.string_utils.to_folder_path(OutputDir + ConfigDir)
+Evaluator.SaveDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.SaveDir)
+Evaluator.StatisticDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.StatisticDir)
+Simulator.MATLAB.OutputDir = utils.string_utils.to_folder_path(OutputDir + Simulator.MATLAB.OutputDir)
