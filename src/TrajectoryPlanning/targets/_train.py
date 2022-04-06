@@ -1,66 +1,19 @@
 import config
-import random
+import framework.her
 import time
 import utils.print
 import utils.string_utils
 from copy import copy
-from framework.controller.model import Critic as ControllerCritic
-from framework.controller.model import Actor as ControllerActor
+from framework.configuration import global_configs as configs
 from framework.ddpg import Agent
 from framework.evaluator import Evaluator
-from framework.planner.game import Game as PlannerGame
-from framework.models.planner import Critic as PlannerCritic
-from framework.models.planner import Actor as PlannerActor
 from framework.replay_buffer import Transition
-from simulator import Game as ControllerGame
-from simulator import Simulator
-
-def augment_replay_buffered(replay_buffer: list[Transition]) -> list[Transition]:
-    res: list[Transition] = []
-    game = ControllerGame()
-    game.reset()
-
-    for i, trans in enumerate(replay_buffer):
-        # Sample k transitions after this transition as new goals.
-        sample_src = replay_buffer[i + 1:]
-        sample_count = min(config.Train.HER.K, len(sample_src))
-        sampled_trans = random.sample(sample_src, sample_count)
-        
-        # Generate a new transition for each goal.
-        for trans_goal in sampled_trans:
-            new_state = copy(trans.state)
-            new_state.desired = trans_goal.state.achieved
-            new_state.update() # notify changes.
-
-            new_next_state = copy(trans.next_state)
-            new_next_state.desired = trans_goal.state.achieved
-            new_next_state.update() # notify changes.
-
-            new_action = trans.action
-            reward, _ = game.update(new_action, new_next_state)
-            new_trans = Transition(new_state, new_action, reward, new_next_state)
-            res.append(new_trans)
-    
-    return res
-
-def generate_controller_agent(dim_state, dim_action) -> Agent:
-    critic = ControllerCritic(dim_state, dim_action)
-    critic_targ = ControllerCritic(dim_state, dim_action)
-    actor = ControllerActor(dim_state, dim_action)
-    actor_targ = ControllerActor(dim_state, dim_action)
-    return Agent(critic, actor, critic_targ, actor_targ, 'controller')
-
-def generate_planner_agent(dim_state, dim_action) -> Agent:
-    critic = PlannerCritic(dim_state, dim_action)
-    critic_targ = PlannerCritic(dim_state, dim_action)
-    actor = PlannerActor(dim_state, dim_action)
-    actor_targ = PlannerActor(dim_state, dim_action)
-    return Agent(critic, actor, critic_targ, actor_targ, 'planner')
+from simulator import Game, Simulator
 
 def main():
     sim = Simulator()
-    controller_game = ControllerGame()
-    planner_game = PlannerGame()
+    controller_game = Game()
+    planner_game = Game()
     
     # Reset simulator to get sizes of states and actions.
     state = sim.reset()
@@ -68,39 +21,47 @@ def main():
     dim_controller_action = sim.dim_action()
 
     # Initialize the agents.
-    controller_agent = generate_controller_agent(dim_state, dim_controller_action)
-    planner_agent = generate_planner_agent(dim_state, len(state.desired))
+    controller_agent = Agent(dim_state, dim_controller_action, 'controller', 'controller')
+    planner_agent = Agent(dim_state, len(state.desired), 'planner', 'planner')
 
     # Load evaluators.
     controller_eval = Evaluator(controller_agent)
-    if config.Train.LoadFromPreviousSession: controller_eval.load()
-
     planner_eval = Evaluator(planner_agent)
-    if config.Train.LoadFromPreviousSession: planner_eval.load()
+
+    if config.Train.LoadFromPreviousSession:
+        controller_eval.load()
+        planner_eval.load()
 
     # Logging.
     last_update_time = time.time()
     last_log_step = 0
 
-    while controller_eval.get_epoch() <= config.Train.DDPG.MaxEpoches:
+    # Load from configs.
+    max_epoches = configs.get(config.Train.DDPG.FieldMaxEpoches)
+    max_iters = configs.get(config.Train.DDPG.FieldMaxIterations)
+    noise_enabled = configs.get(config.Train.DDPG.FieldNoiseEnabled)
+    warmup = configs.get(config.Train.DDPG.FieldWarmup)
+    epsilon = configs.get(config.Train.DDPG.FieldEpsilon)
+    her_enabled = configs.get(config.Train.HER.FieldEnabled)
+    her_k = configs.get(config.Train.HER.FieldK)
+
+    while controller_eval.get_epoch() <= max_epoches:
         epoch_replay_buffer: list[Transition] = []
-        done = False
-
-        planner_state = sim.reset()
-
         controller_game.reset()
         planner_game.reset()
+        planner_state = sim.reset()
+        done = False
 
-        while not done and controller_eval.get_iteration() <= config.Train.DDPG.MaxIterations:
+        while not done and controller_eval.get_iteration() <= max_iters:
             step = controller_eval.get_step()
 
             # Sample an action and perform.
-            if step < config.Train.DDPG.Warmup:
+            if step < warmup:
                 planner_action = planner_agent.sample_random_action()
                 controller_action = controller_agent.sample_random_action()
             else:
-                if config.Train.DDPG.NoiseEnabled:
-                    noise_amount = 1 - step / config.Train.DDPG.Epsilon
+                if noise_enabled:
+                    noise_amount = 1 - step / epsilon
                 else:
                     noise_amount = -1
                 planner_action = planner_agent.sample_action(planner_state, noise_amount=noise_amount)
@@ -114,7 +75,7 @@ def main():
             controller_next_state.desired = planner_action
 
             # Calculate rewards and add to replay buffer.
-            planner_rwd, _ = planner_game.update(planner_action, planner_next_state)
+            planner_rwd, _ = game.update(planner_action, planner_next_state)
             planner_trans = Transition(planner_state, planner_action, planner_rwd, planner_next_state)
             planner_agent.replay_buffer.append(planner_trans)
 
@@ -141,7 +102,7 @@ def main():
         
         # [optional] Perform HER.
         if config.Train.HER.Enabled:
-            epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer)
+            epoch_replay_buffer = framework.her.augment_replay_buffer(epoch_replay_buffer)
             for trans in epoch_replay_buffer:
                 controller_agent.replay_buffer.append(trans)
 

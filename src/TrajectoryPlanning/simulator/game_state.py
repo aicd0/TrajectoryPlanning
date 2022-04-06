@@ -49,6 +49,10 @@ class GameStateBase:
         return o
 
     @abstractmethod
+    def support_her(self) -> bool:
+        return False
+
+    @abstractmethod
     def _as_input(self) -> np.ndarray:
         raise NotImplementedError()
 

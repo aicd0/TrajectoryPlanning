@@ -1,42 +1,13 @@
 import config
-import random
+import framework.her
 import time
 import utils.print
 import utils.string_utils
-from copy import copy
 from framework.configuration import global_configs as configs
 from framework.ddpg import Agent
 from framework.evaluator import Evaluator
 from framework.replay_buffer import Transition
 from simulator import Game, Simulator
-
-def augment_replay_buffered(replay_buffer: list[Transition], k: int) -> list[Transition]:
-    res: list[Transition] = []
-    game = Game()
-    game.reset()
-
-    for i, trans in enumerate(replay_buffer):
-        # Sample k transitions after this transition as new goals.
-        sample_src = replay_buffer[i + 1:]
-        sample_count = min(k, len(sample_src))
-        sampled_trans = random.sample(sample_src, sample_count)
-        
-        # Generate a new transition for each goal.
-        for trans_goal in sampled_trans:
-            new_state = copy(trans.state)
-            new_state.desired = trans_goal.state.achieved
-            new_state.update() # notify changes.
-
-            new_next_state = copy(trans.next_state)
-            new_next_state.desired = trans_goal.state.achieved
-            new_next_state.update() # notify changes.
-
-            new_action = trans.action
-            reward, _ = game.update(new_action, new_next_state)
-            new_trans = Transition(new_state, new_action, reward, new_next_state)
-            res.append(new_trans)
-    
-    return res
 
 def main():
     sim = Simulator()
@@ -108,7 +79,7 @@ def main():
         
         # [optional] Perform HER.
         if her_enabled:
-            epoch_replay_buffer = augment_replay_buffered(epoch_replay_buffer, her_k)
+            epoch_replay_buffer = framework.her.augment_replay_buffer(epoch_replay_buffer, her_k)
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 

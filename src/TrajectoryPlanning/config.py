@@ -8,7 +8,7 @@ import utils.string_utils
 # - debug
 Target = 'train'
 
-OutputDir = 'output/MATLAB'
+OutputDir = 'output/Gazebo'
 ConfigDir = 'configs'
 
 class DataType:
@@ -36,8 +36,8 @@ class Train:
         FieldWarmup = ('Train/DDPG/Warmup', 1000)
 
         class PER:
-            FieldEnabled = ('Train/DDPG/PER/Enabled', False)
-            FieldAlpha = ('Train/DDPG/PER/Alpha', 0.5)
+            FieldEnabled = ('Train/DDPG/PER/Enabled', True)
+            FieldAlpha = ('Train/DDPG/PER/Alpha', 0.8)
             FieldK = ('Train/DDPG/PER/K', 0.01)
 
         class OUNoise:
@@ -76,7 +76,7 @@ class Simulator:
     # - matlab
     # - gym
     # - ros
-    FieldPlatform = ('Simulator/Platform', 'matlab')
+    FieldPlatform = ('Simulator/Platform', 'ros')
 
     class Gym:
         # These environments have been tested and work fine:
@@ -95,7 +95,6 @@ class Simulator:
         FieldActionAmp = ('Simulator/MATLAB/ActionAmp', 0.1)
 
     class ROS:
-        DynamicEnabled = False # has to be False
         FieldActionAmp = ('Simulator/ROS/ActionAmp', 0.1)
         FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be consistent to sensor frequencies
 
