@@ -2,13 +2,15 @@ import config
 import json
 import os
 import utils.fileio
+import utils.print
 import utils.string_utils
 from typing import Any, Tuple
 
 class Configuration:
     def __init__(self, name: str) -> None:
         self.__configs = {}
-        self.__file_path = config.ConfigDir + name + '.txt'
+        self.__name = name
+        self.__file_path = config.ConfigDir + self.__name + '.txt'
         self.__load()
 
     def get(self, field: Tuple) -> Any:
@@ -31,6 +33,7 @@ class Configuration:
             return False
         with open(self.__file_path, 'r') as f:
             self.__configs = json.load(f)
+        utils.print.put("Configs loaded (" + self.__name + ")")
         return True
 
 global_configs = Configuration('global')

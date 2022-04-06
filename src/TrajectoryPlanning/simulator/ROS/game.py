@@ -11,11 +11,7 @@ class Game:
         self.__reward = 0
         self.__done = False
 
-        if self.__done:
-            return
-
         if state.collision:
-            self.__reward = 0
             return
 
         # Calculate the distance to the target point.

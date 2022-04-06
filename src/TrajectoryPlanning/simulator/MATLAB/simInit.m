@@ -17,7 +17,7 @@ if exist(tmp.obstacle_file, 'file')
     load(tmp.obstacle_file, 'obstacles');
     disp('Environment loaded');
 else
-    tmp.obstacle_count = 8;
+    tmp.obstacle_count = 0;
     obstacles = {};
     for j = 1 : tmp.obstacle_count
         tmp.obstacle = collisionSphere(0.2);

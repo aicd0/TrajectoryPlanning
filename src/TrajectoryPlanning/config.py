@@ -8,7 +8,7 @@ import utils.string_utils
 # - debug
 Target = 'train'
 
-OutputDir = 'output/gym'
+OutputDir = 'output/MATLAB'
 ConfigDir = 'configs'
 
 class DataType:
@@ -16,7 +16,7 @@ class DataType:
     Torch = torch.float32
 
 class Model:
-    InitialWeight = 0.03
+    FieldInitialWeight = ('Model/InitialWeight', 0.03)
 
 class Train:
     LoadFromPreviousSession = False
@@ -24,7 +24,7 @@ class Train:
     class DDPG:
         MinLogStepInterval = 500
         FieldBatchSize = ('Train/DDPG/BatchSize', 64)
-        FieldEpsilon = ('Train/DDPG/Epsilon', 20000)
+        FieldEpsilon = ('Train/DDPG/Epsilon', 50000)
         FieldGamma = ('Train/DDPG/Gamma', 0.99)
         FieldLRActor = ('Train/DDPG/LRActor', 0.0001)
         FieldLRCritic = ('Train/DDPG/LRCritic', 0.001)
@@ -42,7 +42,7 @@ class Train:
 
         class OUNoise:
             FieldMu = ('Train/DDPG/OUNoise/Mu', 0.0)
-            FieldSigma = ('Train/DDPG/OUNoise/Sigma', 0.4)
+            FieldSigma = ('Train/DDPG/OUNoise/Sigma', 0.2)
             FieldTheta = ('Train/DDPG/OUNoise/Theta', 0.15)
 
         class UniformNoise:
@@ -51,7 +51,7 @@ class Train:
 
     class HER:
         FieldEnabled = ('Train/HER/Enabled', True)
-        FieldK = ('Train/HER/K', 4)
+        FieldK = ('Train/HER/K', 2)
 
 class Test:
     DetachAgent = False
@@ -76,7 +76,7 @@ class Simulator:
     # - matlab
     # - gym
     # - ros
-    FieldPlatform = ('Simulator/Platform', 'gym')
+    FieldPlatform = ('Simulator/Platform', 'matlab')
 
     class Gym:
         # These environments have been tested and work fine:
@@ -92,6 +92,7 @@ class Simulator:
     class MATLAB:
         SessionFile = '../../output/MatlabLauncher/session.txt'
         OutputDir = 'MATLAB'
+        FieldActionAmp = ('Simulator/MATLAB/ActionAmp', 0.1)
 
     class ROS:
         DynamicEnabled = False # has to be False

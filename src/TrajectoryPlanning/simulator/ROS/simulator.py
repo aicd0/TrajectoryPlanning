@@ -135,7 +135,7 @@ class Simulator:
         self.__state = None
 
     def __get_state(self) -> GameState:
-        if self.__state == None:
+        if self.__state is None:
             joint_states: JointState = self.__get_subscriber(TopicLibrary.joint_states)
             link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
             link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
@@ -196,9 +196,12 @@ class Simulator:
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)
-        if self.__get_state().collision:
+        new_state = self.__get_state()
+        if new_state.collision:
             self.__step(last_position)
-        return self.__get_state()
+            new_state = self.__get_state()
+            new_state.collision = True
+        return new_state
 
     def plot_reset(self) -> None:
         pass

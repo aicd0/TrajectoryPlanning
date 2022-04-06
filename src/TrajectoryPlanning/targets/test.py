@@ -9,7 +9,6 @@ from simulator import Game, Simulator
 
 def main():
     sim = Simulator()
-    # sim.eng.simPlotInit(nargout=0)
 
     state = sim.reset()
     dim_action = sim.dim_action()

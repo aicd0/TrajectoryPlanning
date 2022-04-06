@@ -2,6 +2,7 @@ import config
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from framework.configuration import global_configs as configs
 from framework.model import ActorBase, CriticBase, fanin_init
 
 class Actor (ActorBase):
@@ -12,7 +13,7 @@ class Actor (ActorBase):
         h2 = 512
         h3 = 512
         h4 = 512
-        w = config.Model.InitialWeight
+        w = configs.get(config.Model.FieldInitialWeight)
 
         self.fc1 = nn.Linear(dim_state, h1)
         self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())
@@ -48,7 +49,7 @@ class Critic (CriticBase):
         h2 = 512
         h3 = 512
         h4 = 512
-        w = config.Model.InitialWeight
+        w = configs.get(config.Model.FieldInitialWeight)
 
         self.fc1 = nn.Linear(dim_state + dim_action, h1)
         self.fc1.weight.data = fanin_init(self.fc1.weight.data.size())

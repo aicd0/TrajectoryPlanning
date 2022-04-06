@@ -11,13 +11,14 @@ class Game:
 
     def __update(self, action: np.ndarray, state: GameState) -> None:
         self.__reward = 0
-        self.__done = any([
-            state.self_collision,
-            state.world_collision,
-            state.deadlock,
-        ])
+        self.__done = False
+        # self.__done = any([
+        #     state.self_collision,
+        #     state.world_collision,
+        #     state.deadlock,
+        # ])
 
-        if self.__done:
+        if state.collision:
             return
 
         # Calculate the distance to the target point.
@@ -30,6 +31,6 @@ class Game:
     def update(self, action: np.ndarray, state: GameState) -> Tuple:
         self.__update(action, state)
         self.__steps += 1
-        if self.__steps >= 150:
+        if self.__steps >= 100:
             self.__done = True
         return self.__reward, self.__done

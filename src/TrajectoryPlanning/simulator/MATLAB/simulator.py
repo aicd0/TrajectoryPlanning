@@ -9,6 +9,9 @@ from simulator.MATLAB.game_state import GameState
 
 class Simulator:
     def __init__(self):
+        self.__state = None
+        self.__plot_initialized = False
+
         # Attach to a running session.
         connector = Connector()
         assert connector.connect()
@@ -20,30 +23,43 @@ class Simulator:
         self.eng.workspace['output_dir'] = output_dir
         self.eng.simInit(nargout=0)
 
-        # Plot initialization.
-        self.__plot_initialized = False
-
         # Get dim_action.
         state = self.reset()
-        self.__dim_action = len(state.config)
+        self.__dim_action = len(state.joint_position)
 
     def close(self):
         pass
 
-    def __state(self) -> GameState:
-        state = GameState()
-        state.from_matlab(self.eng.workspace['state'])
-        return state
+    def __get_state(self) -> GameState:
+        if self.__state is None:
+            self.__state = GameState()
+            self.__state.from_matlab(self.eng.workspace['state'])
+        return self.__state
+
+    def __step_world(self) -> None:
+        self.eng.simStep(nargout=0)
+        self.__state = None
+
+    def __step(self, joint_position: np.ndarray) -> None:
+        action = joint_position[:, np.newaxis].tolist() # row order
+        self.eng.workspace['action'] = matlab.double(action)
+        self.__step_world()
 
     def reset(self) -> GameState:
         self.eng.simReset(nargout=0)
-        return self.__state()
+        return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action = action[:, np.newaxis].tolist() # row order
-        self.eng.workspace['action'] = matlab.double(action)
-        self.eng.simStep(nargout=0)
-        return self.__state()
+        action_amp = configs.get(config.Simulator.MATLAB.FieldActionAmp)
+        last_position = self.__get_state().joint_position
+        this_position = last_position + action * action_amp
+        self.__step(this_position)
+        new_state = self.__get_state()
+        if new_state.collision:
+            self.__step(last_position)
+            new_state = self.__get_state()
+            new_state.collision = True
+        return new_state
 
     def __plot_init(self) -> None:
         assert not self.__plot_initialized

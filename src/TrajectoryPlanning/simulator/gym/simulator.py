@@ -1,3 +1,4 @@
+import config
 import os
 
 # Requires to add mujoco lib path on Windows before we import gym.
@@ -5,7 +6,6 @@ import utils.platform
 if utils.platform.is_windows():
     os.add_dll_directory(config.Simulator.Gym.MujocoLibPath)
 
-import config
 import gym
 import numpy as np
 from framework.configuration import global_configs as configs
