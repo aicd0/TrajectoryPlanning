@@ -15,7 +15,7 @@ find_package(gazebo REQUIRED)
 # Generate service headers
 add_service_files(
   FILES
-  PlaceTarget.srv
+  PlaceMarkers.srv
   StepWorld.srv
 )
 
@@ -52,5 +52,5 @@ add_library(step_world SHARED src/step_world.cpp)
 add_dependencies(step_world ${PROJECT_NAME}_gencpp)
 
 # Generate executables
-add_executable(place_target src/place_target.cpp)
-add_dependencies(place_target ${PROJECT_NAME}_gencpp)
+add_executable(place_markers src/place_markers.cpp)
+add_dependencies(place_markers ${PROJECT_NAME}_gencpp)

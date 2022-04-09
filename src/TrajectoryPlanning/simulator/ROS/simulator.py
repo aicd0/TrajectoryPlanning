@@ -2,18 +2,24 @@ import config
 import functools
 import numpy as np
 import random
-import rospy
+import sys
 import threading
 import time
+import utils.platform
+import utils.string_utils
 from framework.configuration import global_configs as configs
 from math import pi
 from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
-# Import ROS and Gazebo types.
+# Import ROS and Gazebo packages.
+if utils.platform.is_windows():
+    sys.path.append(config.Simulator.ROS.ROSLibPath)
+    sys.path.append(utils.string_utils.to_path('../RobotSimulator/devel/lib/site-packages'))
+import rospy
 from gazebo_msgs.msg import ContactsState, LinkStates
 from geometry_msgs.msg import Point
-from robot_sim.srv import PlaceTarget, StepWorld
+from robot_sim.srv import PlaceMarkers, StepWorld
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
@@ -49,7 +55,7 @@ class SpinThread (threading.Thread):
 
 class ServiceLibrary:
     step_world = '/user/step_world'
-    place_target = '/user/place_target'
+    place_markers = '/user/place_markers'
 
 class TopicLibrary:
     joint0_com = '/robot/joint0_position_controller/command'
@@ -78,7 +84,7 @@ class Simulator:
         # Register services.
         self.__services = {}
         self.__register_service(ServiceLibrary.step_world, StepWorld)
-        self.__register_service(ServiceLibrary.place_target, PlaceTarget)
+        self.__register_service(ServiceLibrary.place_markers, PlaceMarkers)
 
         # Register publishers.
         self.__publishers = {}
@@ -104,7 +110,7 @@ class Simulator:
         if name in self.__services:
             raise Exception('Duplicated services')
         rospy.wait_for_service(name)
-        self.__services[name] = rospy.ServiceProxy(name, type)
+        self.__services[name] = rospy.ServiceProxy(name, type, persistent=True)
 
     def __register_publisher(self, name: str, type: Type) -> None:
         if name in self.__publishers:
@@ -185,7 +191,7 @@ class Simulator:
         pt.x = self.__desired[0]
         pt.y = self.__desired[1]
         pt.z = self.__desired[2]
-        self.__get_service(ServiceLibrary.place_target)(pt)
+        self.__get_service(ServiceLibrary.place_markers)('marker_red', pt)
 
         # Randomly initialize robot.
         self.__random_state()

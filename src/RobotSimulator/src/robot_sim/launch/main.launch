@@ -36,6 +36,6 @@
   <include file="$(find robot_sim)/launch/robot.control.launch" />
 
   <!-- Other user-defined nodes -->
-  <node name="place_target_node" pkg="robot_sim" type="place_target" respawn="true" />
+  <node name="place_markers_node" pkg="robot_sim" type="place_markers" respawn="true" />
 
 </launch>

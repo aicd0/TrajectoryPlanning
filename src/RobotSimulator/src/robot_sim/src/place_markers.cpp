@@ -1,25 +1,24 @@
+#include <string>
 #include <ros/ros.h>
 #include <gazebo_msgs/GetLinkProperties.h>
 #include <gazebo_msgs/SetLinkProperties.h>
 #include <geometry_msgs/Point.h>
-#include <string>
-#include "robot_sim/PlaceTarget.h"
+#include "robot_sim/PlaceMarkers.h"
 
 using namespace std;
 
-const string target_link_name = "target";
 ros::ServiceClient get_link_property_client;
 ros::ServiceClient set_link_property_client;
 
-bool callback(robot_sim::PlaceTarget::Request  &req,
-              robot_sim::PlaceTarget::Response &res)
+bool callback(robot_sim::PlaceMarkers::Request  &req,
+              robot_sim::PlaceMarkers::Response &res)
 {
   gazebo_msgs::GetLinkProperties get_link_req;
-  get_link_req.request.link_name = target_link_name;
+  get_link_req.request.link_name = req.name;
   get_link_property_client.call(get_link_req);
 
   gazebo_msgs::SetLinkProperties set_link_req;
-  set_link_req.request.link_name = target_link_name;
+  set_link_req.request.link_name = req.name;
   set_link_req.request.com.orientation = get_link_req.response.com.orientation;
   set_link_req.request.com.position.x = -req.position.x;
   set_link_req.request.com.position.y = -req.position.y;
@@ -38,7 +37,7 @@ bool callback(robot_sim::PlaceTarget::Request  &req,
 
 int main(int argc, char *argv[])
 {
-  ros::init(argc, argv, "place_target_node");
+  ros::init(argc, argv, "place_markers_node");
   ros::NodeHandle nh;
 
   {
@@ -53,6 +52,6 @@ int main(int argc, char *argv[])
     set_link_property_client = nh.serviceClient<gazebo_msgs::SetLinkProperties>(srv_name);
   }
 
-  auto service = nh.advertiseService("/user/place_target", callback);
+  auto service = nh.advertiseService("/user/place_markers", callback);
   ros::spin();
 }

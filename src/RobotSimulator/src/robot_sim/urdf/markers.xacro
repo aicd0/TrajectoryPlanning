@@ -7,12 +7,12 @@
   <!-- Base link -->
   <link name="world"/>
 
-  <joint name="target_joint" type="fixed">
+  <joint name="marker_red_joint" type="fixed">
     <parent link="world"/>
-    <child link="target"/>
+    <child link="marker_red"/>
   </joint>
 
-  <link name="target">
+  <link name="marker_red">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
@@ -31,7 +31,7 @@
     </inertial>
   </link>
 
-  <gazebo reference="target">
+  <gazebo reference="marker_red">
     <material>Gazebo/Red</material>
   </gazebo>
 

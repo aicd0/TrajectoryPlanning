@@ -8,7 +8,7 @@ import utils.string_utils
 # - debug
 Target = 'train'
 
-OutputDir = 'output/Gazebo'
+OutputDir = 'output/ros'
 ConfigDir = 'configs'
 
 class DataType:
@@ -36,7 +36,7 @@ class Train:
         FieldWarmup = ('Train/DDPG/Warmup', 1000)
 
         class PER:
-            FieldEnabled = ('Train/DDPG/PER/Enabled', True)
+            FieldEnabled = ('Train/DDPG/PER/Enabled', False)
             FieldAlpha = ('Train/DDPG/PER/Alpha', 0.8)
             FieldK = ('Train/DDPG/PER/K', 0.01)
 
@@ -86,7 +86,7 @@ class Simulator:
         # - Pendulum-v1
         FieldEnvironment = ('Simulator/Gym/Environment', 'FetchReach-v1')
 
-        # This option is only for Windows user.
+        # Only for Windows users.
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin'
 
     class MATLAB:
@@ -98,7 +98,10 @@ class Simulator:
         FieldActionAmp = ('Simulator/ROS/ActionAmp', 0.1)
         FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be consistent to sensor frequencies
 
-# Initializations
+        # Only for Windows users.
+        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages'
+
+# Post-initializations
 OutputDir = utils.string_utils.to_folder_path(OutputDir)
 ConfigDir = utils.string_utils.to_folder_path(OutputDir + ConfigDir)
 Evaluator.SaveDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.SaveDir)
