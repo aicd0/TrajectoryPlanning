@@ -1,34 +1,18 @@
 import config
-import framework.her
+import framework.algorithm.her
+import numpy as np
 import time
 import utils.print
 import utils.string_utils
+from framework.algorithm.ddpg import DDPG as Agent
 from framework.configuration import global_configs as configs
-from framework.ddpg import Agent
 from framework.evaluator import Evaluator
+from framework.noise.ou import OrnsteinUhlenbeckProcess
+from framework.noise.uniform import UniformNoise
 from framework.replay_buffer import Transition
 from simulator import Game, Simulator
 
 def main():
-    sim = Simulator()
-    game = Game()
-    
-    # Reset simulator to get sizes of states and actions.
-    state = sim.reset()
-    dim_action = sim.dim_action()
-    dim_state = state.dim_state()
-
-    # Initialize the agent.
-    agent = Agent(dim_state, dim_action, 'controller')
-
-    # Load evaluator.
-    evaluator = Evaluator(agent)
-    if config.Train.LoadFromPreviousSession: evaluator.load()
-
-    # Logging.
-    last_update_time = time.time()
-    last_log_step = 0
-
     # Load from configs.
     max_epoches = configs.get(config.Train.DDPG.FieldMaxEpoches)
     max_iters = configs.get(config.Train.DDPG.FieldMaxIterations)
@@ -37,6 +21,33 @@ def main():
     epsilon = configs.get(config.Train.DDPG.FieldEpsilon)
     her_enabled = configs.get(config.Train.HER.FieldEnabled)
     her_k = configs.get(config.Train.HER.FieldK)
+
+    # Initialize environment.
+    sim = Simulator()
+    game = Game()
+    state = sim.reset()
+    dim_action = sim.dim_action()
+    dim_state = state.dim_state()
+
+    # Initialize agent.
+    agent = Agent(dim_state, dim_action, 'ddpg/l5')
+
+    # Initialize noises.
+    random_policy = UniformNoise(dim_action,
+        configs.get(config.Train.DDPG.UniformNoise.FieldMin),
+        configs.get(config.Train.DDPG.UniformNoise.FieldMax))
+    action_noise = OrnsteinUhlenbeckProcess(dim_action,
+        theta=configs.get(config.Train.DDPG.OUNoise.FieldTheta),
+        mu=configs.get(config.Train.DDPG.OUNoise.FieldMu),
+        sigma=configs.get(config.Train.DDPG.OUNoise.FieldSigma))
+
+    # Load evaluator.
+    evaluator = Evaluator(agent)
+    if config.Train.LoadFromPreviousSession: evaluator.load()
+
+    # Logging.
+    last_update_time = time.time()
+    last_log_step = 0
     
     while evaluator.get_epoch() <= max_epoches:
         epoch_replay_buffer: list[Transition] = []
@@ -49,14 +60,18 @@ def main():
 
             # Sample an action and perform.
             if step < warmup:
-                action = agent.sample_random_action()
+                action = random_policy.sample()
             else:
+                action = agent.sample_action(state)
+                
                 if noise_enabled:
                     noise_amount = 1 - step / epsilon
                 else:
-                    noise_amount = -1
-                action = agent.sample_action(state, noise_amount=noise_amount)
-
+                    noise_amount = 0
+                noise_amount = max(noise_amount, 0)
+                action += action_noise.sample() * noise_amount
+            
+            action = np.clip(action, -1, 1)
             next_state = sim.step(action)
 
             # Calculate reward and add to replay buffer.
@@ -79,7 +94,7 @@ def main():
         
         # [optional] Perform HER.
         if her_enabled:
-            epoch_replay_buffer = framework.her.augment_replay_buffer(epoch_replay_buffer, her_k)
+            epoch_replay_buffer = framework.algorithm.her.augment_replay_buffer(epoch_replay_buffer, her_k)
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 

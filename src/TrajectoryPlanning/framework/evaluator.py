@@ -4,13 +4,13 @@ import numpy as np
 import utils.fileio
 import utils.print
 import utils.string_utils
+from framework.agent import AgentBase
 from framework.configuration import Configuration
-from framework.ddpg import Agent
 
 checkpoint_file = 'statistics.npz'
 
 class Evaluator(object):
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: AgentBase):
         self.__agent = agent
         self.__configs = Configuration('evaluator_' + agent.name)
         self.__save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir + agent.name)
@@ -115,23 +115,23 @@ class Evaluator(object):
 
         plt.figure(figsize=(width, height))
         plt.plot(self.__x_step, self.__y_win_epoch_reward_avg)
-        # plt.errorbar(x=self.__x_step, y=self.__y_win_epoch_reward_avg, yerr=self.__y_win_epoch_reward_std) # fmt='-o'
         plt.title('Epoch rewards')
         plt.xlabel('Step')
         plt.ylabel('Reward')
         plt.tight_layout()
-        plt.savefig(output_path + 'reward_epoch.png', dpi=dpi)
+        plt.savefig(output_path + 'epoch_rewards.png', dpi=dpi)
         plt.close()
         
         plt.figure(figsize=(width, height))
         plt.plot(self.__x_step, self.__y_win_step_reward_avg)
-        # plt.errorbar(x=self.__x_step, y=self.__y_win_step_reward_avg, yerr=self.__y_win_step_reward_std) # fmt='-o'
         plt.title('Step rewards')
         plt.xlabel('Step')
         plt.ylabel('Reward')
         plt.tight_layout()
-        plt.savefig(output_path + 'reward_step.png', dpi=dpi)
+        plt.savefig(output_path + 'step_rewards.png', dpi=dpi)
         plt.close()
+        
+        # plt.errorbar(x=self.__x_step, y=self.__y_win_step_reward_avg, yerr=self.__y_win_step_reward_std) # fmt='-o'
 
     def save(self) -> None:
         # Save model.
@@ -155,9 +155,9 @@ class Evaluator(object):
 
         utils.print.put('Checkpoint saved at %f' % self.__max_save_val)
 
-    def load(self, learning_enabled=True) -> None:
+    def load(self, enable_learning) -> None:
         # Load model.
-        if not self.__agent.load(self.__model_dir, learning_enabled=learning_enabled):
+        if not self.__agent.load(self.__model_dir, enable_learning=enable_learning):
             raise RuntimeError('Failed to load agent.')
         
         # Load statistics.

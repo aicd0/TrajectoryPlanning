@@ -1,6 +1,4 @@
-import config
 import utils.platform
-from framework.configuration import Configuration
 from targets import target
 
 def main():

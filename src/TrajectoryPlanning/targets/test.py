@@ -1,24 +1,28 @@
+from cgitb import enable
 import config
 import numpy as np
 import utils.print
 import utils.string_utils
-from framework.configuration import global_configs as configs
-from framework.ddpg import Agent
+from framework.algorithm.ddpg import DDPG as Agent
 from framework.evaluator import Evaluator
 from simulator import Game, Simulator
 
 def main():
+    # Initialize environment.
     sim = Simulator()
-
+    game = Game()
     state = sim.reset()
     dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
-    agent = Agent(dim_state, dim_action, 'controller')
-    evaluator = Evaluator(agent)
-    evaluator.load(learning_enabled=False)
+    # Initialize agent.
+    agent = Agent(dim_state, dim_action, 'ddpg/l5')
 
-    game = Game()
+    # Load evaluator.
+    evaluator = Evaluator(agent)
+    evaluator.load(enable_learning=False)
+
+    # Logging.
     step_rewards = []
     epoch_rewards = []
 
@@ -32,8 +36,7 @@ def main():
 
         while not done and iteration < config.Test.MaxIterations:
             iteration += 1
-            noise_amount = 1 if config.Test.NoiseEnabled else -1
-            action = agent.sample_action(state, noise_amount=noise_amount, detach=config.Test.DetachAgent)
+            action = agent.sample_action(state)
             state = sim.step(action)
             reward, done = game.update(action, state)
             epoch_reward += reward
@@ -41,6 +44,8 @@ def main():
             sim.plot_step()
         
         epoch_rewards.append(epoch_reward)
+
+    sim.close()
 
     step_rewards = np.array(step_rewards, dtype=config.DataType.Numpy)
     epoch_rewards = np.array(epoch_rewards, dtype=config.DataType.Numpy).reshape(-1, 1)
@@ -51,5 +56,3 @@ def main():
     res['StpRwd'] = np.mean(step_rewards)
     res['StpRwdStd'] = np.std(step_rewards)
     utils.print.put('[Test] ' + utils.string_utils.dict_to_str(res))
-    
-    sim.close()

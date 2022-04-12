@@ -2,14 +2,14 @@ import numpy as np
 import torch
 import utils.string_utils
 
+OutputDir = 'output/gym'
+ConfigDir = 'configs'
+
 # Valid targets:
 # - train
 # - test
 # - debug
 Target = 'train'
-
-OutputDir = 'output/ros'
-ConfigDir = 'configs'
 
 class DataType:
     Numpy = np.float32
@@ -35,11 +35,6 @@ class Train:
         FieldTau = ('Train/DDPG/Tau', 0.001)
         FieldWarmup = ('Train/DDPG/Warmup', 1000)
 
-        class PER:
-            FieldEnabled = ('Train/DDPG/PER/Enabled', False)
-            FieldAlpha = ('Train/DDPG/PER/Alpha', 0.8)
-            FieldK = ('Train/DDPG/PER/K', 0.01)
-
         class OUNoise:
             FieldMu = ('Train/DDPG/OUNoise/Mu', 0.0)
             FieldSigma = ('Train/DDPG/OUNoise/Sigma', 0.2)
@@ -52,6 +47,11 @@ class Train:
     class HER:
         FieldEnabled = ('Train/HER/Enabled', True)
         FieldK = ('Train/HER/K', 2)
+
+    class PER:
+        FieldEnabled = ('Train/PER/Enabled', False)
+        FieldAlpha = ('Train/PER/Alpha', 0.8)
+        FieldK = ('Train/PER/K', 0.01)
 
 class Test:
     DetachAgent = False
@@ -73,21 +73,20 @@ class Evaluator:
 
 class Simulator:
     # Valid platforms:
-    # - matlab
     # - gym
+    # - matlab
     # - ros
-    FieldPlatform = ('Simulator/Platform', 'ros')
+    FieldPlatform = ('Simulator/Platform', 'gym')
 
     class Gym:
+        MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows users
+
         # These environments have been tested and work fine:
         # - CartPole-v0
         # - CartPole-v1
         # - FetchReach-v1
         # - Pendulum-v1
-        FieldEnvironment = ('Simulator/Gym/Environment', 'FetchReach-v1')
-
-        # Only for Windows users.
-        MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin'
+        FieldEnvironment = ('Simulator/Gym/Environment', 'Pendulum-v1')
 
     class MATLAB:
         SessionFile = '../../output/MatlabLauncher/session.txt'
@@ -95,13 +94,11 @@ class Simulator:
         FieldActionAmp = ('Simulator/MATLAB/ActionAmp', 0.1)
 
     class ROS:
+        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows users
         FieldActionAmp = ('Simulator/ROS/ActionAmp', 0.1)
-        FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be consistent to sensor frequencies
+        FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be adapted to sensor frequencies
 
-        # Only for Windows users.
-        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages'
-
-# Post-initializations
+# Post-initialization
 OutputDir = utils.string_utils.to_folder_path(OutputDir)
 ConfigDir = utils.string_utils.to_folder_path(OutputDir + ConfigDir)
 Evaluator.SaveDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.SaveDir)

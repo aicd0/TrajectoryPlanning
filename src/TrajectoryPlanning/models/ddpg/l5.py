@@ -3,12 +3,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from framework.configuration import global_configs as configs
-from framework.model import ActorBase, CriticBase, fanin_init
+from models.utils import fanin_init
 
-class Actor (ActorBase):
+class Actor (nn.Module):
     def __init__(self, dim_state, dim_action):
-        ActorBase.__init__(self, dim_state, dim_action)
-
+        super().__init__()
         h1 = 512
         h2 = 512
         h3 = 512
@@ -41,10 +40,9 @@ class Actor (ActorBase):
         x = torch.tanh(self.fc5(x))
         return x
 
-class Critic (CriticBase):
+class Critic (nn.Module):
     def __init__(self, dim_state, dim_action):
-        CriticBase.__init__(self, dim_state, dim_action)
-
+        super().__init__()
         h1 = 512
         h2 = 512
         h3 = 512

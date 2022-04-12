@@ -155,7 +155,7 @@ class ReplayBuffer:
 
     def sample(self, count: int) -> list[Transition]:
         assert 0 <= count <= self.__size
-        per_enabled = self.__configs.get(config.Train.DDPG.PER.FieldEnabled)
+        per_enabled = self.__configs.get(config.Train.PER.FieldEnabled)
         if per_enabled:
             samples = []
             for _ in range(count):

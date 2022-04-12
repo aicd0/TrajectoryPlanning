@@ -8,8 +8,6 @@
 #include "gazebo/transport/transport.hh"
 #include "robot_sim/StepWorld.h"
 
-#include <iostream>
-
 namespace gazebo
 {
   class StepWorldPlugin : public WorldPlugin
