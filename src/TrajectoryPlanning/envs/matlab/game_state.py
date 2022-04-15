@@ -1,6 +1,6 @@
 import config
 import numpy as np
-from simulator.game_state import GameStateBase
+from envs.game_state import GameStateBase
 from typing import Any
 
 class GameState (GameStateBase):
@@ -12,9 +12,9 @@ class GameState (GameStateBase):
 
     def from_matlab(self, src):
         """Convert states from MATLAB."""
-        self.joint_position = np.array(src['config']._data, dtype=config.DataType.Numpy)
-        self.achieved = np.array(src['achieved']._data, dtype=config.DataType.Numpy)
-        self.desired = np.array(src['desired']._data, dtype=config.DataType.Numpy)
+        self.joint_position = np.array(src['config']._data, dtype=config.Common.DataType.Numpy)
+        self.achieved = np.array(src['achieved']._data, dtype=config.Common.DataType.Numpy)
+        self.desired = np.array(src['desired']._data, dtype=config.Common.DataType.Numpy)
         self.collision = bool(src['collision'])
         self.deadlock = bool(src['deadlock'])
         self.update()
@@ -27,7 +27,7 @@ class GameState (GameStateBase):
             self.achieved,
             self.desired,
             obj_rel_pos,
-        ), dtype=config.DataType.Numpy)
+        ), dtype=config.Common.DataType.Numpy)
 
     def _to_list(self) -> list:
         return [

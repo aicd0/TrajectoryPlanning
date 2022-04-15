@@ -3,9 +3,9 @@ import matlab
 import numpy as np
 import utils.fileio
 import utils.string_utils
+from .engine import Connector
+from .game_state import GameState
 from framework.configuration import global_configs as configs
-from simulator.MATLAB.engine import Connector
-from simulator.MATLAB.game_state import GameState
 
 class Simulator:
     def __init__(self):
@@ -18,7 +18,7 @@ class Simulator:
         self.eng = connector.engine()
 
         # Robot initialization.
-        output_dir = config.Simulator.MATLAB.OutputDir
+        output_dir = config.Environment.MATLAB.OutputDir
         utils.fileio.mktree(output_dir)
         self.eng.workspace['output_dir'] = output_dir
         self.eng.simInit(nargout=0)
@@ -50,7 +50,7 @@ class Simulator:
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = configs.get(config.Simulator.MATLAB.FieldActionAmp)
+        action_amp = configs.get(config.Environment.MATLAB.ActionAmp_)
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)

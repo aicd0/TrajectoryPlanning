@@ -1,180 +1,113 @@
 import config
-import matplotlib.pyplot as plt
 import numpy as np
 import utils.fileio
 import utils.print
 import utils.string_utils
 from framework.agent import AgentBase
 from framework.configuration import Configuration
+from framework.plot import PlotManager
 
-checkpoint_file = 'statistics.npz'
+global_checkpoint_file = 'global.npz'
 
-class Evaluator(object):
+class Evaluator:
     def __init__(self, agent: AgentBase):
-        self.__agent = agent
-        self.__configs = Configuration('evaluator_' + agent.name)
-        self.__save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir + agent.name)
-        self.__model_dir = utils.string_utils.to_folder_path(self.__save_dir + 'model')
-        self.__statistic_dir = utils.string_utils.to_folder_path(config.Evaluator.StatisticDir + agent.name)
-        self.__iterations = 0
-        self.__epoch_step_rewards = []
-        self.__last_save_step = 0
-        self.__last_plot_epoch = 0
+        self.configs = Configuration('evaluator_' + agent.name)
+        window = self.configs.get(config.Evaluator.EpochWindowSize_)
 
-        self.__epoches = 0
-        self.__steps = 0
-        self.__max_save_val = None
-        self.__step_rewards = []
-        self.__x_step = []
-        self.__x_epoch = []
-        self.__y_epoch_reward = []
-        self.__y_step_reward_avg = []
-        self.__y_step_reward_std = []
-        self.__y_win_epoch_reward_avg = []
-        self.__y_win_epoch_reward_std = []
-        self.__y_win_step_reward_avg = []
-        self.__y_win_step_reward_std = []
+        self.agent = agent
+        self.save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir + agent.name)
+        self.model_dir = utils.string_utils.to_folder_path(self.save_dir + 'model')
+        self.plot_data_dir = utils.string_utils.to_folder_path(self.save_dir + 'plot_data')
+        self.figure_dir = utils.string_utils.to_folder_path(config.Evaluator.FigureDir + agent.name)
+        self.plot_manager = agent.plot_manager
+        self.epoches = 0
+        self.steps = 0
+        self.iterations = 0
+        self.epoch_reward = 0
+        self.last_save_step = 0
+        self.last_plot_epoch = 0
+        self.max_save_val = None
 
-    def get_epoch(self) -> int:
-        return self.__epoches
-
-    def get_iteration(self) -> int:
-        return self.__iterations
-
-    def get_step(self) -> int:
-        return self.__steps
+        self.plot_epoch_reward = 'epoch_rewards'
+        self.plot_step_reward = 'step_rewards'
+        self.plot_manager.create_plot(self.plot_epoch_reward, 'Epoch rewards', 'Reward', window=window)
+        self.plot_manager.create_plot(self.plot_step_reward, 'Step rewards', 'Reward', window=window)
 
     def step(self, reward: float) -> None:
-        self.__epoch_step_rewards.append(reward)
-        self.__iterations += 1
-        self.__steps += 1
+        self.iterations += 1
+        self.steps += 1
+        self.plot_manager.push(self.plot_step_reward, reward)
+        self.epoch_reward += reward
 
     def epoch(self, allow_save: bool = True) -> None:
-        epoch_step_rewards = np.array(self.__epoch_step_rewards, dtype=config.DataType.Numpy)
-        self.__epoches += 1
-        self.__iterations = 0
-        self.__epoch_step_rewards = []
-        self.__step_rewards.append(epoch_step_rewards)
-        self.__x_step.append(self.__steps)
-        self.__x_epoch.append(self.__epoches)
+        self.epoches += 1
+        self.iterations = 0
 
-        self.__y_epoch_reward.append(np.sum(epoch_step_rewards))
-        self.__y_step_reward_avg.append(np.mean(epoch_step_rewards))
-        self.__y_step_reward_std.append(np.std(epoch_step_rewards))
+        self.plot_manager.push(self.plot_epoch_reward, self.epoch_reward)
+        self.epoch_reward = 0
 
-        win_size = self.__configs.get(config.Evaluator.FieldEpochWindowSize)
-        epoch_reward_window = np.array(self.__y_epoch_reward[len(self.__y_epoch_reward) - win_size:])
-        step_reward_window = np.concatenate(self.__step_rewards[len(self.__step_rewards) - win_size:])
-        self.__y_win_epoch_reward_avg.append(np.mean(epoch_reward_window))
-        self.__y_win_epoch_reward_std.append(np.std(epoch_reward_window))
-        self.__y_win_step_reward_avg.append(np.mean(step_reward_window))
-        self.__y_win_step_reward_std.append(np.std(step_reward_window))
+        self.plot_manager.stage(self.epoches, self.steps)
 
-        min_save_step_interval = self.__configs.get(config.Evaluator.FieldMinSaveStepInterval)
-        allow_save = allow_save and self.get_step() - self.__last_save_step >= min_save_step_interval
+        min_save_step_interval = self.configs.get(config.Evaluator.MinSaveStepInterval_)
+        allow_save = allow_save and self.steps - self.last_save_step >= min_save_step_interval
 
-        max_plot_epoch_interval = self.__configs.get(config.Evaluator.Figure.FieldMaxSaveEpochInterval)
-        need_plot = self.get_epoch() - self.__last_plot_epoch >= max_plot_epoch_interval
-
-        if allow_save and not self.__agent is None:
-            save_val = self.__y_win_epoch_reward_avg[-1]
-            if self.__max_save_val is None or save_val > self.__max_save_val:
-                self.__max_save_val = save_val
-                self.__last_save_step = self.get_step()
+        max_plot_epoch_interval = self.configs.get(config.Evaluator.Figure.MaxSaveEpochInterval_)
+        need_plot = self.epoches - self.last_plot_epoch >= max_plot_epoch_interval
+        
+        if allow_save and not self.agent is None:
+            save_val = self.plot_manager.get_plot(self.plot_epoch_reward).y_avg_win[-1]
+            if self.max_save_val is None or save_val > self.max_save_val:
+                self.max_save_val = save_val
+                self.last_save_step = self.steps
                 need_plot = True
                 self.save()
 
         if need_plot:
-            self.__last_plot_epoch = self.get_epoch()
-            self.plot()
+            self.last_plot_epoch = self.epoches
+            self.plot_manager.plot(self.figure_dir, self.configs)
 
     def summary(self, shortterm: bool=False) -> dict:
         res_dict = {
-            'Ep': self.get_epoch(),
-            'Iter': self.get_iteration(),
-            'Stp': self.get_step(),
+            'Ep': self.epoches,
+            'Iter': self.iterations,
+            'Stp': self.steps,
         }
+        ep_rwd = self.plot_manager.get_plot(self.plot_epoch_reward)
+        stp_rwd = self.plot_manager.get_plot(self.plot_step_reward)
         if shortterm:
-            if len(self.__y_epoch_reward): res_dict['REp'] = self.__y_epoch_reward[-1]
-            if len(self.__y_step_reward_avg): res_dict['RStp'] = self.__y_step_reward_avg[-1]
-            if len(self.__y_step_reward_std): res_dict['RStpStd'] = self.__y_step_reward_std[-1]
+            if len(ep_rwd.y_avg): res_dict['REp'] = ep_rwd.y_avg[-1]
+            if len(stp_rwd.y_avg): res_dict['RStp'] = stp_rwd.y_avg[-1]
+            if len(stp_rwd.y_std): res_dict['RStpStd'] = stp_rwd.y_std[-1]
         else:
-            if len(self.__y_win_epoch_reward_avg): res_dict['REp'] = self.__y_win_epoch_reward_avg[-1]
-            if len(self.__y_win_epoch_reward_std): res_dict['REpStd'] = self.__y_win_epoch_reward_std[-1]
-            if len(self.__y_win_step_reward_avg): res_dict['RStp'] = self.__y_win_step_reward_avg[-1]
-            if len(self.__y_win_step_reward_std): res_dict['RStpStd'] = self.__y_win_step_reward_std[-1]
+            if len(ep_rwd.y_avg_win): res_dict['REp'] = ep_rwd.y_avg_win[-1]
+            if len(ep_rwd.y_std_win): res_dict['REpStd'] = ep_rwd.y_std_win[-1]
+            if len(stp_rwd.y_avg_win): res_dict['RStp'] = stp_rwd.y_avg_win[-1]
+            if len(stp_rwd.y_std_win): res_dict['RStpStd'] = stp_rwd.y_std_win[-1]
         return res_dict
-
-    def plot(self) -> None:
-        output_path = self.__statistic_dir
-        utils.fileio.mktree(output_path)
-
-        width = self.__configs.get(config.Evaluator.Figure.FieldWidth)
-        height = self.__configs.get(config.Evaluator.Figure.FieldHeight)
-        dpi = self.__configs.get(config.Evaluator.Figure.FieldDPI)
-
-        plt.figure(figsize=(width, height))
-        plt.plot(self.__x_step, self.__y_win_epoch_reward_avg)
-        plt.title('Epoch rewards')
-        plt.xlabel('Step')
-        plt.ylabel('Reward')
-        plt.tight_layout()
-        plt.savefig(output_path + 'epoch_rewards.png', dpi=dpi)
-        plt.close()
-        
-        plt.figure(figsize=(width, height))
-        plt.plot(self.__x_step, self.__y_win_step_reward_avg)
-        plt.title('Step rewards')
-        plt.xlabel('Step')
-        plt.ylabel('Reward')
-        plt.tight_layout()
-        plt.savefig(output_path + 'step_rewards.png', dpi=dpi)
-        plt.close()
-        
-        # plt.errorbar(x=self.__x_step, y=self.__y_win_step_reward_avg, yerr=self.__y_win_step_reward_std) # fmt='-o'
 
     def save(self) -> None:
         # Save model.
-        self.__agent.save(self.__model_dir)
+        self.agent.save(self.model_dir)
 
-        # Save statistics.
-        np.savez(self.__save_dir + checkpoint_file,
-            epoches=self.__epoches,
-            steps=self.__steps,
-            max_save_val=self.__max_save_val,
-            step_rewards=np.array(self.__step_rewards, dtype=object),
-            x_step=self.__x_step,
-            x_epoch=self.__x_epoch,
-            y_epoch_reward=self.__y_epoch_reward,
-            y_step_reward_avg=self.__y_step_reward_avg,
-            y_step_reward_std=self.__y_step_reward_std,
-            y_win_epoch_reward_avg=self.__y_win_epoch_reward_avg,
-            y_win_epoch_reward_std=self.__y_win_epoch_reward_std,
-            y_win_step_reward_avg=self.__y_win_step_reward_avg,
-            y_win_step_reward_std=self.__y_win_step_reward_std)
+        # Save plot data.
+        np.savez(self.save_dir + global_checkpoint_file,
+            epoches=self.epoches,
+            steps=self.steps,
+            max_save_val=self.max_save_val)
+        self.plot_manager.save(self.plot_data_dir)
 
-        utils.print.put('Checkpoint saved at %f' % self.__max_save_val)
+        utils.print.put('Checkpoint saved at %f' % self.max_save_val)
 
     def load(self, enable_learning) -> None:
         # Load model.
-        if not self.__agent.load(self.__model_dir, enable_learning=enable_learning):
+        if not self.agent.load(self.model_dir, enable_learning=enable_learning):
             raise RuntimeError('Failed to load agent.')
         
-        # Load statistics.
-        checkpoint = np.load(self.__save_dir + checkpoint_file, allow_pickle=True)
+        # Load plot data.
+        checkpoint = np.load(self.save_dir + global_checkpoint_file)
+        self.epoches = int(checkpoint['epoches'])
+        self.steps = int(checkpoint['steps'])
+        self.max_save_val = float(checkpoint['max_save_val'])
+        self.plot_manager.load(self.plot_data_dir)
 
-        self.__epoches = int(checkpoint['epoches'])
-        self.__steps = int(checkpoint['steps'])
-        self.__max_save_val = float(checkpoint['max_save_val'])
-        self.__step_rewards = checkpoint['step_rewards'].tolist()
-        self.__x_step = checkpoint['x_step'].tolist()
-        self.__x_epoch = checkpoint['x_epoch'].tolist()
-        self.__y_epoch_reward = checkpoint['y_epoch_reward'].tolist()
-        self.__y_step_reward_avg = checkpoint['y_step_reward_avg'].tolist()
-        self.__y_step_reward_std = checkpoint['y_step_reward_std'].tolist()
-        self.__y_win_epoch_reward_avg = checkpoint['y_win_epoch_reward_avg'].tolist()
-        self.__y_win_epoch_reward_std = checkpoint['y_win_epoch_reward_std'].tolist()
-        self.__y_win_step_reward_avg = checkpoint['y_win_step_reward_avg'].tolist()
-        self.__y_win_step_reward_std = checkpoint['y_win_step_reward_std'].tolist()
-
-        utils.print.put('Checkpoint loaded at %f' % self.__max_save_val)
+        utils.print.put('Checkpoint loaded at %f' % self.max_save_val)

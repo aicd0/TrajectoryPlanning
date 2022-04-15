@@ -7,15 +7,15 @@ import threading
 import time
 import utils.platform
 import utils.string_utils
+from .game_state import GameState
 from framework.configuration import global_configs as configs
 from math import pi
-from simulator.ROS.game_state import GameState
 from typing import Any, Type
 
 # Import ROS and Gazebo packages.
 if utils.platform.is_windows():
-    sys.path.append(config.Simulator.ROS.ROSLibPath)
-    sys.path.append(utils.string_utils.to_path('../RobotSimulator/devel/lib/site-packages'))
+    sys.path.append(config.Environment.ROS.ROSLibPath)
+    sys.path.append(config.Environment.ROS.ProjectLibPath)
 import rospy
 from gazebo_msgs.msg import ContactsState, LinkStates
 from geometry_msgs.msg import Point
@@ -42,11 +42,8 @@ class SpinThread (threading.Thread):
         if not rospy.core.is_initialized():
             raise rospy.exceptions.ROSInitException("client code must call rospy.init_node() first")
         self.__terminate_requested = False
-        try:
-            while not rospy.core.is_shutdown() and not self.__terminate_requested:
-                rospy.rostime.wallsleep(0.5)
-        except KeyboardInterrupt:
-            rospy.core.signal_shutdown('keyboard interrupt')
+        while not rospy.core.is_shutdown() and not self.__terminate_requested:
+            rospy.rostime.wallsleep(0.5)
     
     def terminate(self) -> None:
         self.__terminate_requested = True
@@ -136,7 +133,7 @@ class Simulator:
         return self.__subscribers[name]
 
     def __step_world(self) -> None:
-        step_iterations = configs.get(config.Simulator.ROS.FieldStepIterations)
+        step_iterations = configs.get(config.Environment.ROS.StepIterations_)
         self.__get_service(ServiceLibrary.step_world)(step_iterations)
         self.__state = None
 
@@ -198,7 +195,7 @@ class Simulator:
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = configs.get(config.Simulator.ROS.FieldActionAmp)
+        action_amp = configs.get(config.Environment.ROS.ActionAmp_)
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)

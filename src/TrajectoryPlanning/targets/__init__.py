@@ -1,12 +1,12 @@
 import config
 
-if False:
-    pass
-elif config.Target == 'train':
+__target = config.Common.Target
+
+if __target == 'train':
     from . import train as target
-elif config.Target == 'test':
+elif __target == 'test':
     from . import test as target
-elif config.Target == 'debug':
+elif __target == 'debug':
     from . import debug as target
 else:
-    raise Exception('Unsupported target')
+    raise Exception('Unrecognized target')

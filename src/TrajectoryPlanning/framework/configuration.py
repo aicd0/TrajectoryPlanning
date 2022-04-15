@@ -10,7 +10,7 @@ class Configuration:
     def __init__(self, name: str) -> None:
         self.__configs = {}
         self.__name = name
-        self.__file_path = config.ConfigDir + self.__name + '.txt'
+        self.__file_path = config.Common.ConfigDir + self.__name + '.txt'
         self.__load()
 
     def get(self, field: Tuple) -> Any:

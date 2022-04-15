@@ -2,58 +2,75 @@ import numpy as np
 import torch
 import utils.string_utils
 
-OutputDir = 'output/gym'
-ConfigDir = 'configs'
+class Common:
+    OutputDir = 'output/gym'
+    ConfigDir = 'configs'
+    Target = 'train'
 
-# Valid targets:
-# - train
-# - test
-# - debug
-Target = 'train'
+    class DataType:
+        Numpy = np.float32
+        Torch = torch.float32
 
-class DataType:
-    Numpy = np.float32
-    Torch = torch.float32
+class Environment:
+    Platform_ = ('Environment/Platform', 'gym')
+    MaxIterations_ = ('Environment/MaxIterations', 10000)
+
+    class Gym:
+        MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows
+        Environment_ = ('Environment/Gym/Environment', 'HalfCheetah-v2')
+
+    class MATLAB:
+        OutputDir = 'MATLAB'
+        SessionFile = '../../output/MatlabLauncher/session.txt'
+        ActionAmp_ = ('Environment/MATLAB/ActionAmp', 0.1)
+
+    class ROS:
+        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows
+        ProjectLibPath = '../RobotSimulator/devel/lib/site-packages' # only for Windows
+        ActionAmp_ = ('Environment/ROS/ActionAmp', 0.1)
+        StepIterations_ = ('Environment/ROS/StepIterations', 50) # make sure corresponding to sensor frequency
 
 class Model:
-    FieldInitialWeight = ('Model/InitialWeight', 0.03)
+    InitialWeight_ = ('Model/InitialWeight', 0.03)
+    ModelGroup_ = ('Model/ModelGroup', 'ddpg/l5')
 
-class Train:
+class Training:
     LoadFromPreviousSession = False
+    MinLogStepInterval = 500
+    MaxEpoches_ = ('Training/MaxEpoches', 200000)
 
-    class DDPG:
-        MinLogStepInterval = 500
-        FieldBatchSize = ('Train/DDPG/BatchSize', 64)
-        FieldEpsilon = ('Train/DDPG/Epsilon', 50000)
-        FieldGamma = ('Train/DDPG/Gamma', 0.99)
-        FieldLRActor = ('Train/DDPG/LRActor', 0.0001)
-        FieldLRCritic = ('Train/DDPG/LRCritic', 0.001)
-        FieldMaxEpoches = ('Train/DDPG/MaxEpoches', 200000)
-        FieldMaxIterations = ('Train/DDPG/MaxIterations', 10000)
-        FieldNoiseEnabled = ('Train/DDPG/NoiseEnabled', True)
-        FieldReplayBuffer = ('Train/DDPG/ReplayBuffer', 50000)
-        FieldTau = ('Train/DDPG/Tau', 0.001)
-        FieldWarmup = ('Train/DDPG/Warmup', 1000)
+    class Agent:
+        Algorithm_ = ('Training/Agent/Algorithm', 'ddpg')
+        BatchSize_ = ('Training/Agent/BatchSize', 64)
+        Gamma_ = ('Training/Agent/Gamma', 0.99)
+        LRActor_ = ('Training/Agent/LRActor', 0.0001)
+        LRCritic_ = ('Training/Agent/LRCritic', 0.001)
+        ReplayBuffer_ = ('Training/Agent/ReplayBuffer', 50000)
+        Tau_ = ('Training/Agent/Tau', 0.001)
+        Warmup_ = ('Training/Agent/Warmup', 1000)
 
-        class OUNoise:
-            FieldMu = ('Train/DDPG/OUNoise/Mu', 0.0)
-            FieldSigma = ('Train/DDPG/OUNoise/Sigma', 0.2)
-            FieldTheta = ('Train/DDPG/OUNoise/Theta', 0.15)
+        class ActionNoise:
+            class Normal:
+                Enabled_ = ('Training/Agent/ActionNoise/Normal/Enabled', True)
+                Epsilon_ = ('Training/Agent/ActionNoise/Normal/Epsilon', 50000)
+                Mu_ = ('Training/Agent/ActionNoise/Normal/Mu', 0.0)
+                Sigma_ = ('Training/Agent/ActionNoise/Normal/Sigma', 0.2)
+                Theta_ = ('Training/Agent/ActionNoise/Normal/Theta', 0.15)
 
-        class UniformNoise:
-            FieldMax = ('Train/DDPG/UniformNoise/Max', 1.0)
-            FieldMin = ('Train/DDPG/UniformNoise/Min', -1.0)
+        class HER:
+            Enabled_ = ('Training/Agent/HER/Enabled', True)
+            K_ = ('Training/Agent/HER/K', 2)
 
-    class HER:
-        FieldEnabled = ('Train/HER/Enabled', True)
-        FieldK = ('Train/HER/K', 2)
+        class PER:
+            Enabled_ = ('Training/Agent/PER/Enabled', False)
+            Alpha_ = ('Training/Agent/PER/Alpha', 0.8)
+            K_ = ('Training/Agent/PER/K', 0.01)
 
-    class PER:
-        FieldEnabled = ('Train/PER/Enabled', False)
-        FieldAlpha = ('Train/PER/Alpha', 0.8)
-        FieldK = ('Train/PER/K', 0.01)
+        class SAC:
+            AutoEntropyTuning_ = ('Training/Agent/SAC/AutoEntropyTuning', True)
+            LRAlpha_ = ('Training/Agent/SAC/LRAlpha', 0.0001)
 
-class Test:
+class Testing:
     DetachAgent = False
     NoiseEnabled = False
     MaxEpoches = 100
@@ -61,46 +78,20 @@ class Test:
 
 class Evaluator:
     SaveDir = 'checkpoint'
-    StatisticDir = 'statistics'
-    FieldEpochWindowSize = ('Evaluator/EpochWindowSize', 20)
-    FieldMinSaveStepInterval = ('Evaluator/MinSaveStepInterval', 1000)
+    FigureDir = 'figures'
+    EpochWindowSize_ = ('Evaluator/EpochWindowSize', 20)
+    MinSaveStepInterval_ = ('Evaluator/MinSaveStepInterval', 1000)
 
     class Figure:
-        FieldDPI = ('Evaluator/Figure/DPI', 300)
-        FieldHeight = ('Evaluator/Figure/Height', 5)
-        FieldWidth = ('Evaluator/Figure/Width', 9)
-        FieldMaxSaveEpochInterval = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
-
-class Simulator:
-    # Valid platforms:
-    # - gym
-    # - matlab
-    # - ros
-    FieldPlatform = ('Simulator/Platform', 'gym')
-
-    class Gym:
-        MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows users
-
-        # These environments have been tested and work fine:
-        # - CartPole-v0
-        # - CartPole-v1
-        # - FetchReach-v1
-        # - Pendulum-v1
-        FieldEnvironment = ('Simulator/Gym/Environment', 'Pendulum-v1')
-
-    class MATLAB:
-        SessionFile = '../../output/MatlabLauncher/session.txt'
-        OutputDir = 'MATLAB'
-        FieldActionAmp = ('Simulator/MATLAB/ActionAmp', 0.1)
-
-    class ROS:
-        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows users
-        FieldActionAmp = ('Simulator/ROS/ActionAmp', 0.1)
-        FieldStepIterations = ('Simulator/ROS/StepIterations', 50) # has to be adapted to sensor frequencies
+        DPI_ = ('Evaluator/Figure/DPI', 300)
+        Height_ = ('Evaluator/Figure/Height', 5)
+        Width_ = ('Evaluator/Figure/Width', 9)
+        MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
 
 # Post-initialization
-OutputDir = utils.string_utils.to_folder_path(OutputDir)
-ConfigDir = utils.string_utils.to_folder_path(OutputDir + ConfigDir)
-Evaluator.SaveDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.SaveDir)
-Evaluator.StatisticDir = utils.string_utils.to_folder_path(OutputDir + Evaluator.StatisticDir)
-Simulator.MATLAB.OutputDir = utils.string_utils.to_folder_path(OutputDir + Simulator.MATLAB.OutputDir)
+Common.OutputDir = utils.string_utils.to_folder_path(Common.OutputDir)
+Common.ConfigDir = utils.string_utils.to_folder_path(Common.OutputDir + Common.ConfigDir)
+Environment.MATLAB.OutputDir = utils.string_utils.to_folder_path(Common.OutputDir + Environment.MATLAB.OutputDir)
+Environment.ROS.ProjectLibPath = utils.string_utils.to_folder_path(Environment.ROS.ProjectLibPath)
+Evaluator.SaveDir = utils.string_utils.to_folder_path(Common.OutputDir + Evaluator.SaveDir)
+Evaluator.FigureDir = utils.string_utils.to_folder_path(Common.OutputDir + Evaluator.FigureDir)

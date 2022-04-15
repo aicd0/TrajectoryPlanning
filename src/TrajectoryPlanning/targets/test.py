@@ -1,13 +1,16 @@
-from cgitb import enable
 import config
+import framework.algorithm
 import numpy as np
 import utils.print
 import utils.string_utils
-from framework.algorithm.ddpg import DDPG as Agent
+from envs import Game, Simulator
+from framework.configuration import global_configs as configs
 from framework.evaluator import Evaluator
-from simulator import Game, Simulator
 
 def main():
+    # Load from configs.
+    model_group = configs.get(config.Model.ModelGroup_)
+
     # Initialize environment.
     sim = Simulator()
     game = Game()
@@ -16,7 +19,7 @@ def main():
     dim_state = state.dim_state()
 
     # Initialize agent.
-    agent = Agent(dim_state, dim_action, 'ddpg/l5')
+    agent = framework.algorithm.create_agent(model_group, dim_state, dim_action, model_group)
 
     # Load evaluator.
     evaluator = Evaluator(agent)
@@ -26,7 +29,7 @@ def main():
     step_rewards = []
     epoch_rewards = []
 
-    for _ in range(config.Test.MaxEpoches):
+    for _ in range(config.Testing.MaxEpoches):
         state = sim.reset()
         game.reset()
         sim.plot_reset()
@@ -34,9 +37,9 @@ def main():
         iteration = 0
         epoch_reward = 0
 
-        while not done and iteration < config.Test.MaxIterations:
+        while not done and iteration < config.Testing.MaxIterations:
             iteration += 1
-            action = agent.sample_action(state)
+            action = agent.sample_action(state, deterministic=True)
             state = sim.step(action)
             reward, done = game.update(action, state)
             epoch_reward += reward
@@ -47,8 +50,8 @@ def main():
 
     sim.close()
 
-    step_rewards = np.array(step_rewards, dtype=config.DataType.Numpy)
-    epoch_rewards = np.array(epoch_rewards, dtype=config.DataType.Numpy).reshape(-1, 1)
+    step_rewards = np.array(step_rewards, dtype=config.Common.DataType.Numpy)
+    epoch_rewards = np.array(epoch_rewards, dtype=config.Common.DataType.Numpy).reshape(-1, 1)
     
     res = {}
     res['EpRwd'] = np.mean(epoch_rewards)

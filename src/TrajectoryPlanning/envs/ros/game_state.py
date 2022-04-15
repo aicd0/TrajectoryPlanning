@@ -1,8 +1,8 @@
 import config
 import numpy as np
 import utils.math
+from envs.game_state import GameStateBase
 from math import pi
-from simulator.game_state import GameStateBase
 from typing import Any
 
 class GameState (GameStateBase):
@@ -12,7 +12,7 @@ class GameState (GameStateBase):
         self.collision: bool = None
 
     def from_joint_states(self, joint_states) -> None:
-        self.joint_position = np.array(joint_states.position, dtype=config.DataType.Numpy)
+        self.joint_position = np.array(joint_states.position, dtype=config.Common.DataType.Numpy)
         self.joint_position[0] = utils.math.period_map(self.joint_position[0], -pi, pi)
         
     def support_her(self) -> bool:
@@ -26,7 +26,7 @@ class GameState (GameStateBase):
             self.achieved,
             self.desired,
             obj_rel_pos,
-        ], dtype=config.DataType.Numpy)
+        ], dtype=config.Common.DataType.Numpy)
 
     def _to_list(self) -> list:
         return [

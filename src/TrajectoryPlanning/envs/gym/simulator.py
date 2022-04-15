@@ -2,18 +2,18 @@ import config
 import numpy as np
 import os
 import utils.platform
+from envs.gym.game_state import GameState
 from framework.configuration import global_configs as configs
-from simulator.gym.game_state import GameState
 
 # Import gym packages.
 if utils.platform.is_windows():
-    os.add_dll_directory(config.Simulator.Gym.MujocoLibPath)
+    os.add_dll_directory(config.Environment.Gym.MujocoLibPath)
 import gym
 from gym.spaces import Discrete
 
 class Simulator:
     def __init__(self):
-        self.__env = gym.make(configs.get(config.Simulator.Gym.FieldEnvironment))
+        self.__env = gym.make(configs.get(config.Environment.Gym.Environment_))
 
         # Analyse action space
         self.action_discrete = isinstance(self.__env.action_space, Discrete)
@@ -21,6 +21,7 @@ class Simulator:
             self.__dim_action = 1
             self.n_action = self.__env.action_space.n
         else:
+            assert len(self.__env.action_space.shape) == 1
             self.__dim_action = self.__env.action_space.shape[0]
 
     def close(self):

@@ -1,7 +1,7 @@
 import random
 from copy import copy
+from envs import Game
 from framework.replay_buffer import Transition
-from simulator import Game
 
 def augment_replay_buffer(replay_buffer: list[Transition], k: int) -> list[Transition]:
     old_replay_buffer: list[Transition] = []

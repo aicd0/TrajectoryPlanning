@@ -6,16 +6,17 @@ import utils.fileio
 import utils.print
 import utils.string_utils
 from abc import abstractmethod
+from envs.game_state import GameStateBase
 from framework.configuration import Configuration
+from framework.plot import PlotManager
 from framework.replay_buffer import ReplayBuffer
-from simulator.game_state import GameStateBase
 
 replay_buffer_file = 'replay_buffer.txt'
 
 class AgentBase:
     __agent_number = {}
 
-    def __init__(self, dim_state: int, dim_action: int, model_base: str, name: str = None) -> None:
+    def __init__(self, dim_state: int, dim_action: int, model_group: str, name: str = None) -> None:
         if name is None:
             cls_name = self.__class__.__name__
             if cls_name in AgentBase.__agent_number:
@@ -29,13 +30,16 @@ class AgentBase:
         self.configs = Configuration(self.name)
         self.dim_state = dim_state
         self.dim_action = dim_action
-        self.model_base = model_base
+        self.model_group = model_group
 
         # Initialize the replay buffer.
         self.replay_buffer = ReplayBuffer(self.configs)
 
+        # Plots.
+        self.plot_manager = PlotManager()
+
     @abstractmethod
-    def sample_action(self, state: GameStateBase) -> np.ndarray:
+    def sample_action(self, state: GameStateBase, deterministic: bool) -> np.ndarray:
         raise NotImplementedError()
 
     @abstractmethod
@@ -72,7 +76,7 @@ class AgentBase:
 
         # [optional] Load replay buffer.
         if enable_learning:
-            capacity = self.configs.get(config.Train.DDPG.FieldReplayBuffer)
+            capacity = self.configs.get(config.Training.Agent.ReplayBuffer_)
             with open(path + replay_buffer_file, 'r') as f:
                 raw_obj = json.load(f)
                 self.replay_buffer = ReplayBuffer.from_serializable(raw_obj, capacity)
