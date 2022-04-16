@@ -1,2 +1,2 @@
-source devel/setup.bash
+source setup.bash
 roslaunch robot_sim main.launch

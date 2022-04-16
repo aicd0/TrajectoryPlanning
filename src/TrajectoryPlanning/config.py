@@ -3,7 +3,7 @@ import torch
 import utils.string_utils
 
 class Common:
-    OutputDir = 'output/gym'
+    OutputDir = 'output/gazebo_sac'
     ConfigDir = 'configs'
     Target = 'train'
 
@@ -12,7 +12,7 @@ class Common:
         Torch = torch.float32
 
 class Environment:
-    Platform_ = ('Environment/Platform', 'gym')
+    Platform_ = ('Environment/Platform', 'ros')
     MaxIterations_ = ('Environment/MaxIterations', 10000)
 
     class Gym:
@@ -32,7 +32,7 @@ class Environment:
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
-    ModelGroup_ = ('Model/ModelGroup', 'ddpg/l5')
+    ModelGroup_ = ('Model/ModelGroup', 'sac/l3')
 
 class Training:
     LoadFromPreviousSession = False
@@ -40,7 +40,7 @@ class Training:
     MaxEpoches_ = ('Training/MaxEpoches', 200000)
 
     class Agent:
-        Algorithm_ = ('Training/Agent/Algorithm', 'ddpg')
+        Algorithm_ = ('Training/Agent/Algorithm', 'sac')
         BatchSize_ = ('Training/Agent/BatchSize', 64)
         Gamma_ = ('Training/Agent/Gamma', 0.99)
         LRActor_ = ('Training/Agent/LRActor', 0.0001)

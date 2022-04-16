@@ -1,3 +1,4 @@
+from cmath import e
 import config
 import functools
 import numpy as np
@@ -20,6 +21,7 @@ import rospy
 from gazebo_msgs.msg import ContactsState, LinkStates
 from geometry_msgs.msg import Point
 from robot_sim.srv import PlaceMarkers, StepWorld
+from rospy.service import ServiceException
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
@@ -123,8 +125,16 @@ class Simulator:
         callback_wrapper = functools.partial(callback, name)
         rospy.Subscriber(name, type, callback_wrapper)
 
-    def __get_service(self, name: str) -> Any:
-        return self.__services[name]
+    def __call_service(self, name: str, *args) -> Any:
+        for _ in range(3):
+            proxy = self.__services[name]
+            try:
+                return proxy(*args)
+            except ServiceException as e:
+                proxy.close()
+                del self.__services[name]
+                self.__register_service(name, proxy.service_class)
+        raise Exception('Connection Error')
 
     def __get_publisher(self, name: str) -> Any:
         return self.__publishers[name]
@@ -134,7 +144,7 @@ class Simulator:
 
     def __step_world(self) -> None:
         step_iterations = configs.get(config.Environment.ROS.StepIterations_)
-        self.__get_service(ServiceLibrary.step_world)(step_iterations)
+        self.__call_service(ServiceLibrary.step_world, step_iterations)
         self.__state = None
 
     def __get_state(self) -> GameState:
@@ -188,7 +198,7 @@ class Simulator:
         pt.x = self.__desired[0]
         pt.y = self.__desired[1]
         pt.z = self.__desired[2]
-        self.__get_service(ServiceLibrary.place_markers)('marker_red', pt)
+        self.__call_service(ServiceLibrary.place_markers, 'marker_red', pt)
 
         # Randomly initialize robot.
         self.__random_state()

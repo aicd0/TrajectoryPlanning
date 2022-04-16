@@ -10,7 +10,7 @@
     </include>
 
     <!-- reference to your plugin -->
-    <!-- <plugin name="step_world" filename="libstep_world.so"/> -->
+    <plugin name="step_world" filename="libstep_world.so"/>
     <plugin name="step_world" filename="step_world.dll"/>
   </world>
 </sdf>
