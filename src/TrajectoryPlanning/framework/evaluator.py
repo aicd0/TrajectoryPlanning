@@ -5,7 +5,6 @@ import utils.print
 import utils.string_utils
 from framework.agent import AgentBase
 from framework.configuration import Configuration
-from framework.plot import PlotManager
 
 global_checkpoint_file = 'global.npz'
 
@@ -93,12 +92,13 @@ class Evaluator:
         np.savez(self.save_dir + global_checkpoint_file,
             epoches=self.epoches,
             steps=self.steps,
+            last_save_step=self.last_save_step,
             max_save_val=self.max_save_val)
         self.plot_manager.save(self.plot_data_dir)
 
         utils.print.put('Checkpoint saved at %f' % self.max_save_val)
 
-    def load(self, enable_learning) -> None:
+    def load(self, enable_learning=True) -> None:
         # Load model.
         if not self.agent.load(self.model_dir, enable_learning=enable_learning):
             raise RuntimeError('Failed to load agent.')
@@ -107,6 +107,7 @@ class Evaluator:
         checkpoint = np.load(self.save_dir + global_checkpoint_file)
         self.epoches = int(checkpoint['epoches'])
         self.steps = int(checkpoint['steps'])
+        self.last_save_step = int(checkpoint['last_save_step'])
         self.max_save_val = float(checkpoint['max_save_val'])
         self.plot_manager.load(self.plot_data_dir)
 

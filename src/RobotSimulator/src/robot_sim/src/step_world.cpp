@@ -73,12 +73,9 @@ namespace gazebo
       for (;;) {
         unsigned int commit = m_call_time_estimator.remain();
         std::this_thread::sleep_for(std::chrono::milliseconds(commit));
-
-        if (m_world_ptr->Iterations() < res.old_iterations + req.steps) {
-          m_call_time_estimator.commit(commit, false);
-        }
-        else {
-          m_call_time_estimator.commit(commit, true);
+        bool completed = m_world_ptr->Iterations() >= res.old_iterations + req.steps;
+        m_call_time_estimator.commit(commit, completed);
+        if (completed) {
           break;
         }
       }

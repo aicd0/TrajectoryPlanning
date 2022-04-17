@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import utils.fileio
+import utils.string_utils
 from framework.configuration import Configuration
 
 class Plot:
@@ -74,9 +75,9 @@ class Plot:
 
     def load(self, filepath: str) -> bool:
         checkpoint = np.load(filepath, allow_pickle=True)
-        self.plot_name = checkpoint['plot_name']
-        self.title = checkpoint['title']
-        self.label = checkpoint['label']
+        self.plot_name = str(checkpoint['plot_name'])
+        self.title = str(checkpoint['title'])
+        self.label = str(checkpoint['label'])
         self.window = int(checkpoint['window'])
         self.y = checkpoint['y'].tolist()
         self.y_avg = checkpoint['y_avg'].tolist()
@@ -122,5 +123,6 @@ class PlotManager:
 
     def load(self, path: str):
         for filename in os.listdir(path):
-            plot = self.create_plot(filename, '_', '_')
+            plot_name = utils.string_utils.to_display_name(filename)
+            plot = self.create_plot(plot_name, '_', '_')
             plot.load(path + filename)

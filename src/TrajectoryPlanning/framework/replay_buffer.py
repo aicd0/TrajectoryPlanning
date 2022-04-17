@@ -1,6 +1,7 @@
 import config
 import numpy as np
 import random
+import utils.print
 from envs import GameState
 from framework.configuration import Configuration
 from typing import Any, Iterator
@@ -23,20 +24,20 @@ class Transition:
         self.__p = value
         self.node.update_sum()
 
-    def to_serializable(self) -> Any:
+    def to_list(self) -> list:
         return [
             self.state.to_list(),
-            self.action.tolist(),
+            self.action,
             self.reward,
             self.next_state.to_list(),
             self.p,
         ]
 
     @staticmethod
-    def from_serializable(x):
+    def from_list(x: list):
         return Transition(
             GameState.from_list(x[0]),
-            np.array(x[1]),
+            x[1],
             x[2],
             GameState.from_list(x[3]),
             x[4],
@@ -137,6 +138,9 @@ class ReplayBuffer:
             # Append to buffer.
             self.__buffer.append(transition)
             self.__size += 1
+
+            if self.__size >= self.__capacity:
+                utils.print.put('Replay buffer is full, will overwrite previous data.')
         else:
             # Update node.
             node = self.__buffer[self.__begin].node
@@ -165,15 +169,12 @@ class ReplayBuffer:
             samples = random.sample(self.__buffer, count)
         return samples
 
-    def to_serializable(self) -> Any:
-        x = []
-        for item in self:
-            x.append(item.to_serializable())
-        return x
+    def to_list(self) -> list:
+        return [item.to_list() for item in self]
 
     @staticmethod
-    def from_serializable(x, size) -> Any:
-        o = ReplayBuffer(size)
+    def from_list(x: list, configs: Configuration) -> Any:
+        o = ReplayBuffer(configs)
         for item in x:
-            o.append(Transition.from_serializable(item))
+            o.append(Transition.from_list(item))
         return o

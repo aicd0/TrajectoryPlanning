@@ -1,7 +1,7 @@
 import config
 import numpy as np
-from framework.configuration import global_configs as configs
 from envs.game_state import GameStateBase
+from framework.configuration import global_configs as configs
 from typing import Any
 
 class GameState (GameStateBase):

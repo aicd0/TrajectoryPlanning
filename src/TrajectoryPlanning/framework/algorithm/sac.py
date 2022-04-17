@@ -4,22 +4,17 @@ import models
 import numpy as np
 import os
 import torch
-import torch.nn as nn
 import utils.fileio
 import utils.math
 import utils.print
 import utils.string_utils
-from framework.agent import AgentBase
 from envs.game_state import GameStateBase
+from framework.agent import AgentBase
+from torch import nn
 from torch.distributions import Normal
 from torch.optim import Adam
 
-q1_checkpoint_file = 'q1'
-q2_checkpoint_file = 'q2'
-q1_targ_checkpoint_file = 'q1_targ'
-q2_targ_checkpoint_file = 'q2_targ'
-actor_checkpoint_file = 'actor'
-alpha_checkpoint_file = 'alpha'
+checkpoint_file = 'checkpoint.pt'
 
 class SAC (AgentBase):
     def __init__(self, dim_state: int, dim_action: int, model_group: str, name: str = None) -> None:
@@ -44,7 +39,11 @@ class SAC (AgentBase):
 
         utils.math.hard_update(self.q1_targ, self.q1) # make sure target is with the same weight.
         utils.math.hard_update(self.q2_targ, self.q2)
-        self.__init_optim()
+        
+        # Initialize optimizers.
+        self.critic_optim = Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=self.lr_critic)
+        self.actor_optim = Adam(self.actor.parameters(), lr=self.lr_actor)
+        self.alpha_optim = Adam([self.log_alpha], lr=self.lr_alpha)
 
         # Auto entropy tuning.
         self.target_entropy = -float(dim_action)
@@ -62,11 +61,6 @@ class SAC (AgentBase):
         if self.auto_entropy_tuning:
             self.plot_log_alpha = 'log_alpha'
             self.plot_manager.create_plot(self.plot_log_alpha, 'Temperature', 'Ln alpha')
-
-    def __init_optim(self) -> None:
-        self.critic_optim = Adam(list(self.q1.parameters()) + list(self.q2.parameters()), lr=self.lr_critic)
-        self.actor_optim = Adam(self.actor.parameters(), lr=self.lr_actor)
-        self.alpha_optim = Adam([self.log_alpha], lr=self.lr_alpha)
 
     def __sample_action(self, states: np.ndarray) -> np.ndarray:
         mean, log_std = self.actor(states)
@@ -163,30 +157,34 @@ class SAC (AgentBase):
                 sampled_trans[i].p = float(priorities[i][0])
 
     def _save(self, path: str) -> None:
-        torch.save(self.q1.state_dict(), path + q1_checkpoint_file)
-        torch.save(self.q2.state_dict(), path + q2_checkpoint_file)
-        torch.save(self.q1_targ.state_dict(), path + q1_targ_checkpoint_file)
-        torch.save(self.q2_targ.state_dict(), path + q2_targ_checkpoint_file)
-        torch.save(self.actor.state_dict(), path + actor_checkpoint_file)
+        path = utils.string_utils.to_folder_path(path)
+        torch.save({
+            'q1': self.q1.state_dict(),
+            'q2': self.q2.state_dict(),
+            'q1_targ': self.q1_targ.state_dict(),
+            'q2_targ': self.q2_targ.state_dict(),
+            'actor': self.actor.state_dict(),
+            'log_alpha': self.log_alpha,
+            'critic_optim': self.critic_optim.state_dict(),
+            'actor_optim': self.actor_optim.state_dict(),
+            'alpha_optim': self.alpha_optim.state_dict(),
+            'critic_loss': self.critic_loss,
+        }, path + checkpoint_file)
 
     def _load(self, path: str) -> None:
-        # Check files.
-        path = utils.string_utils.to_folder_path(path)
-        paths = {
-            'q1': path + q1_checkpoint_file,
-            'q2': path + q2_checkpoint_file,
-            'q1_targ': path + q1_targ_checkpoint_file,
-            'q2_targ': path + q2_targ_checkpoint_file,
-            'actor': path + actor_checkpoint_file,
-        }
-        for p in paths.values():
-            if not os.path.exists(p):
-                raise FileNotFoundError()
+        filepath = utils.string_utils.to_folder_path(path) + checkpoint_file
+        if not os.path.exists(filepath):
+            raise FileNotFoundError()
 
-        # Load models.
-        self.q1.load_state_dict(torch.load(paths['q1']))
-        self.q2.load_state_dict(torch.load(paths['q2']))
-        self.q1_targ.load_state_dict(torch.load(paths['q1_targ']))
-        self.q2_targ.load_state_dict(torch.load(paths['q2_targ']))
-        self.actor.load_state_dict(torch.load(paths['actor']))
-        self.__init_optim()
+        checkpoint = torch.load(filepath)
+        self.q1.load_state_dict(checkpoint['q1'])
+        self.q2.load_state_dict(checkpoint['q2'])
+        self.q1_targ.load_state_dict(checkpoint['q1_targ'])
+        self.q2_targ.load_state_dict(checkpoint['q2_targ'])
+        self.actor.load_state_dict(checkpoint['actor'])
+        self.log_alpha: torch.Tensor = checkpoint['log_alpha']
+        self.alpha = self.log_alpha.exp()
+        self.critic_optim.load_state_dict(checkpoint['critic_optim'])
+        self.actor_optim.load_state_dict(checkpoint['actor_optim'])
+        self.alpha_optim.load_state_dict(checkpoint['alpha_optim'])
+        self.critic_loss = checkpoint['critic_loss']

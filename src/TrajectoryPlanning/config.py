@@ -5,7 +5,7 @@ import utils.string_utils
 class Common:
     OutputDir = 'output/gazebo_sac'
     ConfigDir = 'configs'
-    Target = 'train'
+    Target_ = ('Common/Target', 'train')
 
     class DataType:
         Numpy = np.float32
@@ -35,9 +35,10 @@ class Model:
     ModelGroup_ = ('Model/ModelGroup', 'sac/l3')
 
 class Training:
-    LoadFromPreviousSession = False
     MinLogStepInterval = 500
+    LoadFromPreviousSession_ = ('Training/LoadFromPreviousSession', False)
     MaxEpoches_ = ('Training/MaxEpoches', 200000)
+    ProtectedEpoches_ = ('Training/ProtectedEpoches', 20)
 
     class Agent:
         Algorithm_ = ('Training/Agent/Algorithm', 'sac')
@@ -45,7 +46,7 @@ class Training:
         Gamma_ = ('Training/Agent/Gamma', 0.99)
         LRActor_ = ('Training/Agent/LRActor', 0.0001)
         LRCritic_ = ('Training/Agent/LRCritic', 0.001)
-        ReplayBuffer_ = ('Training/Agent/ReplayBuffer', 50000)
+        ReplayBuffer_ = ('Training/Agent/ReplayBuffer', 200000)
         Tau_ = ('Training/Agent/Tau', 0.001)
         Warmup_ = ('Training/Agent/Warmup', 1000)
 

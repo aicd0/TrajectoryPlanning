@@ -1,6 +1,7 @@
 import config
+from framework.configuration import global_configs as configs
 
-__target = config.Common.Target
+__target = configs.get(config.Common.Target_)
 
 if __target == 'train':
     from . import train as target

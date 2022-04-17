@@ -12,7 +12,7 @@ def to_path(path: str) -> str:
     path = path.replace('\\', '/')
     return path
 
-def to_file_path(path):
+def to_file_path(path: str) -> str:
     path = to_path(path)
     if len(path) == 0:
         raise ValueError()
@@ -20,14 +20,21 @@ def to_file_path(path):
         raise ValueError()
     return path
 
-def to_file_name(path):
+def to_file_name(path: str) -> str:
     path = to_file_path(path)
     i = path.rfind('/')
     if i == -1:
         return path
     return path[i + 1:]
 
-def to_parent_path(path):
+def to_display_name(path: str) -> str:
+    filename = to_file_name(path)
+    i = filename.rfind('.')
+    if i == -1:
+        return filename
+    return filename[:i]
+
+def to_parent_path(path: str) -> str:
     path = to_path(path)
     if len(path) == 0:
         return path
@@ -38,7 +45,7 @@ def to_parent_path(path):
         return ''
     return path[:i + 1]
 
-def to_folder_path(path):
+def to_folder_path(path: str) -> str:
     path = to_path(path)
     if len(path) != 0 and path[-1] != '/':
         path += '/'

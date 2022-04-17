@@ -27,20 +27,10 @@ class GameStateBase:
             self.desired,
         ]
         x.extend(self._to_list())
-
-        for i in range(len(x)):
-            if isinstance(x[i], np.ndarray):
-                x[i] = x[i].tolist()
-            elif isinstance(x[i], np.float32):
-                x[i] = float(x[i])
         return x
 
     @classmethod
     def from_list(cls, x: list) -> Any:
-        for i in range(len(x)):
-            if isinstance(x[i], list):
-                x[i] = np.array(x[i])
-
         o: GameStateBase = cls._from_list(x[2:])
         (
             o.achieved,

@@ -18,11 +18,13 @@ def main():
     epsilon = configs.get(config.Training.Agent.ActionNoise.Normal.Epsilon_)
     her_enabled = configs.get(config.Training.Agent.HER.Enabled_)
     her_k = configs.get(config.Training.Agent.HER.K_)
+    load_from_previous = configs.get(config.Training.LoadFromPreviousSession_)
     max_epoches = configs.get(config.Training.MaxEpoches_)
     max_iters = configs.get(config.Environment.MaxIterations_)
     model_group = configs.get(config.Model.ModelGroup_)
     noise_enabled = configs.get(config.Training.Agent.ActionNoise.Normal.Enabled_)
-    warmup = configs.get(config.Training.Agent.Warmup_)
+    protected_epoches = configs.get(config.Training.ProtectedEpoches_)
+    warmup_steps = configs.get(config.Training.Agent.Warmup_)
 
     # Initialize environment.
     sim = Simulator()
@@ -43,13 +45,19 @@ def main():
 
     # Load evaluator.
     evaluator = Evaluator(agent)
-    if config.Training.LoadFromPreviousSession: evaluator.load()
+    if load_from_previous:
+        evaluator.load()
 
-    # Logging.
+    # ~
+    trained_epoches = 0
     last_update_time = time.time()
     last_log_step = 0
     
     while evaluator.epoches <= max_epoches:
+        warmup = evaluator.steps < warmup_steps
+        if not warmup:
+            trained_epoches += 1
+
         epoch_replay_buffer: list[Transition] = []
         game.reset()
         state = sim.reset()
@@ -57,7 +65,7 @@ def main():
 
         while not done and evaluator.iterations <= max_iters:
             # Sample an action and perform the action.
-            if evaluator.steps < warmup:
+            if warmup:
                 action = warmup_noise.sample()
             else:
                 action = agent.sample_action(state, deterministic=False)
@@ -77,7 +85,8 @@ def main():
             epoch_replay_buffer.append(trans)
     
             # [optional] Optimize & save the agent.
-            if evaluator.steps > warmup: agent.learn()
+            if not warmup:
+                agent.learn()
 
             # ~    
             state = next_state
@@ -96,7 +105,7 @@ def main():
                 agent.replay_buffer.append(trans)
 
         # Evaluation & logging.
-        evaluator.epoch(allow_save=evaluator.steps >= warmup * 2)
+        evaluator.epoch(allow_save=trained_epoches > protected_epoches)
         if (evaluator.steps - last_log_step) >= config.Training.MinLogStepInterval:
             last_log_step = evaluator.steps
             utils.print.put('[Evaluate] ' + utils.string_utils.dict_to_str(evaluator.summary()))

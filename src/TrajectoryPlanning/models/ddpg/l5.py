@@ -1,9 +1,9 @@
 import config
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
 from framework.configuration import global_configs as configs
 from models.utils import fanin_init
+from torch import nn
 
 class Actor (nn.Module):
     def __init__(self, dim_state, dim_action):

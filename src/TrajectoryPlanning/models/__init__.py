@@ -1,8 +1,9 @@
 from .ddpg import *
 from .sac import *
+from torch import nn
 from typing import Any
 
-def create(model: str, *args) -> Any:
+def create(model: str, *args) -> nn.Module:
     if (model == 'ddpg/l5/actor'):
         return ddpg.l5.Actor(*args)
     elif (model == 'ddpg/l5/critic'):

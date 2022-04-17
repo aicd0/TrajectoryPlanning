@@ -1,5 +1,3 @@
-import config
-import json
 import numpy as np
 import os
 import utils.fileio
@@ -11,7 +9,7 @@ from framework.configuration import Configuration
 from framework.plot import PlotManager
 from framework.replay_buffer import ReplayBuffer
 
-replay_buffer_file = 'replay_buffer.txt'
+replay_buffer_file = 'replay_buffer.npz'
 
 class AgentBase:
     __agent_number = {}
@@ -50,17 +48,11 @@ class AgentBase:
         path = utils.string_utils.to_folder_path(path)
         utils.fileio.mktree(path)
 
+        # Save model.
         self._save(path)
 
         # Save replay buffer.
-        replay_buffer_checkpoint_file_path = path + replay_buffer_file
-        replay_buffer_checkpoint_temp_file_path = replay_buffer_checkpoint_file_path + '.tmp'
-        with open(replay_buffer_checkpoint_temp_file_path, 'w') as f:
-            tmp = self.replay_buffer.to_serializable()
-            json.dump(tmp, f)
-        if os.path.exists(replay_buffer_checkpoint_file_path):
-            os.remove(replay_buffer_checkpoint_file_path)
-        os.rename(replay_buffer_checkpoint_temp_file_path, replay_buffer_checkpoint_file_path)
+        np.savez(path + replay_buffer_file, data=np.array(self.replay_buffer.to_list(), dtype=object))
 
     @abstractmethod
     def _save(self, path: str) -> None:
@@ -76,10 +68,8 @@ class AgentBase:
 
         # [optional] Load replay buffer.
         if enable_learning:
-            capacity = self.configs.get(config.Training.Agent.ReplayBuffer_)
-            with open(path + replay_buffer_file, 'r') as f:
-                raw_obj = json.load(f)
-                self.replay_buffer = ReplayBuffer.from_serializable(raw_obj, capacity)
+            obj = np.load(path + replay_buffer_file, allow_pickle=True)['data'].tolist()
+            self.replay_buffer = ReplayBuffer.from_list(obj, self.configs)
         
         utils.print.put('Agent loaded')
         return True

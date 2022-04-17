@@ -1,4 +1,3 @@
-from cmath import e
 import config
 import functools
 import numpy as np
@@ -126,15 +125,7 @@ class Simulator:
         rospy.Subscriber(name, type, callback_wrapper)
 
     def __call_service(self, name: str, *args) -> Any:
-        for _ in range(3):
-            proxy = self.__services[name]
-            try:
-                return proxy(*args)
-            except ServiceException as e:
-                proxy.close()
-                del self.__services[name]
-                self.__register_service(name, proxy.service_class)
-        raise Exception('Connection Error')
+        return self.__services[name](*args)
 
     def __get_publisher(self, name: str) -> Any:
         return self.__publishers[name]

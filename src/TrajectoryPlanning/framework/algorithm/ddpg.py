@@ -4,19 +4,16 @@ import models
 import numpy as np
 import os
 import torch
-import torch.nn as nn
-import torch.optim as optim
 import utils.fileio
 import utils.math
 import utils.print
 import utils.string_utils
 from envs.game_state import GameStateBase
 from framework.agent import AgentBase
+from torch import nn
+from torch import optim
 
-critic_checkpoint_file = 'critic'
-actor_checkpoint_file = 'actor'
-critic_targ_checkpoint_file = 'critic_targ'
-actor_targ_checkpoint_file = 'actor_targ'
+checkpoint_file = 'checkpoint.pt'
 
 class DDPG (AgentBase):
     def __init__(self, dim_state: int, dim_action: int, model_group: str, name: str = None) -> None:
@@ -37,7 +34,10 @@ class DDPG (AgentBase):
 
         utils.math.hard_update(self.critic_targ, self.critic) # make sure target is with the same weight.
         utils.math.hard_update(self.actor_targ, self.actor)
-        self.__init_optim()
+
+        # Initialize optimizers.
+        self.critic_optim = optim.Adam(self.critic.parameters(), lr=self.lr_critic)
+        self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.lr_actor)
 
         # Initialize losses.
         self.critic_loss = nn.MSELoss()
@@ -47,10 +47,6 @@ class DDPG (AgentBase):
         self.plot_actor_loss = 'actor_loss'
         self.plot_manager.create_plot(self.plot_critic_loss, 'Critic Loss', 'Loss')
         self.plot_manager.create_plot(self.plot_actor_loss, 'Actor Loss', 'Loss')
-
-    def __init_optim(self) -> None:
-        self.critic_optim = optim.Adam(self.critic.parameters(), lr=self.lr_critic)
-        self.actor_optim = optim.Adam(self.actor.parameters(), lr=self.lr_actor)
 
     def sample_action(self, state: GameStateBase, deterministic: bool) -> np.ndarray:
         state = torch.tensor(state.as_input(), dtype=config.Common.DataType.Torch)
@@ -113,27 +109,27 @@ class DDPG (AgentBase):
                 sampled_trans[i].p = float(priorities[i][0])
 
     def _save(self, path: str) -> None:
-        torch.save(self.critic.state_dict(), path + critic_checkpoint_file)
-        torch.save(self.actor.state_dict(), path + actor_checkpoint_file)
-        torch.save(self.critic_targ.state_dict(), path + critic_targ_checkpoint_file)
-        torch.save(self.actor_targ.state_dict(), path + actor_targ_checkpoint_file)
+        path = utils.string_utils.to_folder_path(path)
+        torch.save({
+            'critic': self.critic.state_dict(),
+            'actor': self.actor.state_dict(),
+            'critic_targ': self.critic_targ.state_dict(),
+            'actor_targ': self.actor_targ.state_dict(),
+            'critic_optim': self.critic_optim.state_dict(),
+            'actor_optim': self.actor_optim.state_dict(),
+            'critic_loss': self.critic_loss,
+        }, path + checkpoint_file)
 
     def _load(self, path: str) -> None:
-        # Check files.
-        path = utils.string_utils.to_folder_path(path)
-        paths = {
-            'critic': path + critic_checkpoint_file,
-            'actor': path + actor_checkpoint_file,
-            'critic_targ': path + critic_targ_checkpoint_file,
-            'actor_targ': path + actor_targ_checkpoint_file,
-        }
-        for p in paths.values():
-            if not os.path.exists(p):
-                raise FileNotFoundError()
+        filepath = utils.string_utils.to_folder_path(path) + checkpoint_file
+        if not os.path.exists(filepath):
+            raise FileNotFoundError()
 
-        # Load models.
-        self.critic.load_state_dict(torch.load(paths['critic']))
-        self.actor.load_state_dict(torch.load(paths['actor']))
-        self.critic_targ.load_state_dict(torch.load(paths['critic_targ']))
-        self.actor_targ.load_state_dict(torch.load(paths['actor_targ']))
-        self.__init_optim()
+        checkpoint = torch.load(filepath)
+        self.critic.load_state_dict(checkpoint['critic'])
+        self.actor.load_state_dict(checkpoint['actor'])
+        self.critic_targ.load_state_dict(checkpoint['critic_targ'])
+        self.actor_targ.load_state_dict(checkpoint['actor_targ'])
+        self.critic_optim.load_state_dict(checkpoint['critic_optim'])
+        self.actor_optim.load_state_dict(checkpoint['actor_optim'])
+        self.critic_loss = checkpoint['critic_loss']
