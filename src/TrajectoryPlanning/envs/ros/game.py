@@ -1,11 +1,14 @@
+import config
 import numpy as np
 import utils.math
 from .game_state import GameState
+from framework.configuration import global_configs as configs
 from typing import Tuple
 
 class Game:
     def __init__(self) -> None:
-        pass
+        # Load configs
+        self.max_iterations = configs.get(config.Environment.ROS.MaxIterations_)
 
     def __update(self, action: np.ndarray, state: GameState) -> None:
         self.__reward = 0
@@ -24,7 +27,7 @@ class Game:
     def update(self, action: np.ndarray, state: GameState) -> Tuple:
         self.__update(action, state)
         self.__steps += 1
-        if self.__steps >= 100:
+        if self.__steps >= self.max_iterations:
             self.__done = True
         return self.__reward, self.__done
 

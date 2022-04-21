@@ -28,6 +28,7 @@ class Environment:
         ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows
         ProjectLibPath = '../RobotSimulator/devel/lib/site-packages' # only for Windows
         ActionAmp_ = ('Environment/ROS/ActionAmp', 0.1)
+        MaxIterations_ = ('Environment/ROS/MaxIterations', 150)
         StepIterations_ = ('Environment/ROS/StepIterations', 50) # make sure corresponding to sensor frequency
 
 class Model:

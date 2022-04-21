@@ -24,3 +24,8 @@ robot:
     type: position_controllers/JointPositionController
     joint: joint3
     pid: {p: 1000, i: 5, d: 20}
+
+  joint4_position_controller:
+    type: position_controllers/JointPositionController
+    joint: joint4
+    pid: {p: 1000, i: 5, d: 20}

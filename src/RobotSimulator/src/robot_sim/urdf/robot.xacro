@@ -18,23 +18,28 @@
 
   <xacro:property name="offset_x" value="0" />
   <xacro:property name="offset_y" value="0" />
-  <xacro:property name="offset_z" value="1" />
+  <xacro:property name="offset_z" value="0.2" />
 
-  <xacro:property name="link0_length" value="0.2" />
-  <xacro:property name="link1_length" value="0.5" />
-  <xacro:property name="link2_length" value="0.5" />
-  <xacro:property name="link3_length" value="0.3" />
+  <xacro:property name="link0_length" value="0.1215" />
+  <xacro:property name="link1_length" value="0.408" />
+  <xacro:property name="link2_length" value="0.376" />
+  <xacro:property name="link3_length" value="0.1025" />
+  <xacro:property name="link4_length" value="0.094" />
 
-  <xacro:property name="link1_d" value="0.1" />
-  <xacro:property name="link2_d" value="-0.1" />
-  <xacro:property name="link3_d" value="0.1" />
+  <xacro:property name="link1_d" value="-0.1405" />
+  <xacro:property name="link2_d" value="0.1215" />
+  <xacro:property name="link3_d" value="-0.1025" />
 
-  <xacro:property name="joint1_low" value="0.0" />
-  <xacro:property name="joint1_high" value="${PI/2}" />
-  <xacro:property name="joint2_low" value="0.0" />
-  <xacro:property name="joint2_high" value="${PI/2}" />
-  <xacro:property name="joint3_low" value="0.0" />
-  <xacro:property name="joint3_high" value="${PI/2}" />
+  <xacro:property name="joint0_low" value="-0.000006" />
+  <xacro:property name="joint0_high" value="3.053448" />
+  <xacro:property name="joint1_low" value="-1.571984" />
+  <xacro:property name="joint1_high" value="1.571984" />
+  <xacro:property name="joint2_low" value="-1.529065" />
+  <xacro:property name="joint2_high" value="1.571069" />
+  <xacro:property name="joint3_low" value="-1.570796" />
+  <xacro:property name="joint3_high" value="1.570796" />
+  <xacro:property name="joint4_low" value="-3.053450" />
+  <xacro:property name="joint4_high" value="3.053439" />
   
   <xacro:property name="joint_effort_lim" value="2000" />
   <xacro:property name="joint_velocity_lim" value="15" />
@@ -48,11 +53,12 @@
   <link name="world"/>
 
   <!-- Joint 0 -->
-  <joint name="joint0" type="continuous">
+  <joint name="joint0" type="revolute">
     <parent link="world"/>
     <child link="link0"/>
     <origin xyz="${offset_x} ${offset_y} ${offset_z}" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
+    <limit lower="${joint0_low}" upper="${joint0_high}" effort="${joint_effort_lim}" velocity="${joint_velocity_lim}"/>
     <dynamics damping="0.7"/>
   </joint>
 
@@ -297,11 +303,77 @@
   </gazebo>
 
   <!-- Joint 4 -->
-  <joint name="joint4" type="continuous">
+  <joint name="joint4" type="revolute">
     <parent link="link3" />
-    <child link="effector" />
-    <origin xyz="0 0 ${link3_length + 0.05}" rpy="0 0 0" />
+    <child link="link4" />
+    <origin xyz="0 0 ${link3_length}" rpy="${PI/2} 0 0" />
     <axis xyz="0 1 0" />
+    <limit lower="${joint4_low}" upper="${joint4_high}" effort="${joint_effort_lim}" velocity="${joint_velocity_lim}"/>
+    <dynamics damping="0.5" />
+  </joint>
+
+  <transmission name="tran4">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="joint4">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="motor4">
+      <hardwareInterface>hardware_interface/PositionJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <!-- Link 4 -->
+  <link name="link4">
+    <collision>
+      <origin xyz="0 0 ${link4_length/2}" rpy="0 0 0"/>
+      <geometry>
+	      <cylinder radius="${link_radius}" length="${link4_length}" />
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 ${link4_length/2}" rpy="0 0 0"/>
+      <geometry>
+	      <cylinder radius="${link_radius}" length="${link4_length}" />
+      </geometry>
+      <material name="orange"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 ${link4_length/2}" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="link4">
+    <material>Gazebo/Orange</material>
+  </gazebo>
+  
+  <gazebo reference="link4">
+    <sensor name="link4_contact_sensor" type="contact">
+      <always_on>true</always_on>
+      <update_rate>${sensor_update_rate}</update_rate>
+      <visualize>false</visualize>
+      <contact>
+        <collision>link4_collision</collision>
+      </contact>
+      <plugin name="gazebo_ros_bumper_controller" filename="libgazebo_ros_bumper.so">
+        <bumperTopicName>/link4_bumper</bumperTopicName>
+      </plugin>
+    </sensor>
+  </gazebo>
+
+  <!-- Joint 5 -->
+  <joint name="joint5" type="continuous">
+    <parent link="link4" />
+    <child link="effector" />
+    <origin xyz="0 0 ${link4_length + 0.05}" rpy="0 0 0" />
+    <axis xyz="0 0 1" />
     <dynamics damping="0.5" />
   </joint>
 
@@ -311,6 +383,8 @@
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <sphere radius="${marker_point_radius}" />
+        <!-- <mesh filename="$(find robot_sim)/mesh/cone.obj"
+              scale="0.4 0.4 0.5" /> -->
       </geometry>
       <material name="blue"/>
     </visual>

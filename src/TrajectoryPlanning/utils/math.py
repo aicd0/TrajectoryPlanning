@@ -21,3 +21,9 @@ def linear_map(val: float, src_low: float, src_high: float, dst_low: float, dst_
 
 def distance(pt1, pt2):
     return np.linalg.norm(pt1 - pt2)
+
+def random_point_in_hypersphere(dim: int, low: float=0, high: float=1) -> np.ndarray:
+    pt = np.random.uniform(-1, 1, dim)
+    pt /= np.linalg.norm(pt)
+    pt *= np.random.uniform(low**dim, high**dim) ** (1/dim)
+    return pt
