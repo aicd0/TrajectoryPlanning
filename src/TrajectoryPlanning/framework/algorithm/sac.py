@@ -17,17 +17,17 @@ from torch.optim import Adam
 checkpoint_file = 'checkpoint.pt'
 
 class SAC (AgentBase):
-    def __init__(self, dim_state: int, dim_action: int, model_group: str, name: str = None) -> None:
-        super().__init__(dim_state, dim_action, model_group, name)
+    def __init__(self, dim_state: int, dim_action: int, name: str = None) -> None:
+        super().__init__(dim_state, dim_action, name)
 
         # Load configs.
-        self.auto_entropy_tuning = self.configs.get(config.Training.Agent.SAC.AutoEntropyTuning_)
-        self.batchsize = self.configs.get(config.Training.Agent.BatchSize_)
-        self.gamma = self.configs.get(config.Training.Agent.Gamma_)
-        self.lr_alpha = self.configs.get(config.Training.Agent.SAC.LRAlpha_)
-        self.lr_actor = self.configs.get(config.Training.Agent.LRActor_)
-        self.lr_critic = self.configs.get(config.Training.Agent.LRCritic_)
-        self.tau = self.configs.get(config.Training.Agent.Tau_)
+        self.auto_entropy_tuning = self.configs.get(config.Agent.SAC.AutoEntropyTuning_)
+        self.batchsize = self.configs.get(config.Agent.BatchSize_)
+        self.gamma = self.configs.get(config.Agent.Gamma_)
+        self.lr_alpha = self.configs.get(config.Agent.SAC.LRAlpha_)
+        self.lr_actor = self.configs.get(config.Agent.LRActor_)
+        self.lr_critic = self.configs.get(config.Agent.LRCritic_)
+        self.tau = self.configs.get(config.Agent.Tau_)
 
         # Initialize models.
         self.q1 = models.create(self.model_group + '/critic', dim_state, dim_action)
@@ -149,15 +149,14 @@ class SAC (AgentBase):
         utils.math.soft_update(self.q2_targ, self.q2, self.tau)
 
         # [optional] Update transition priority.
-        if self.configs.get(config.Training.Agent.PER.Enabled_):
+        if self.configs.get(config.Agent.PER.Enabled_):
             priorities = critic_loss_val
-            priorities **= self.configs.get(config.Training.Agent.PER.Alpha_)
-            priorities *= self.configs.get(config.Training.Agent.PER.K_)
+            priorities **= self.configs.get(config.Agent.PER.Alpha_)
+            priorities *= self.configs.get(config.Agent.PER.K_)
             for i in range(len(sampled_trans)):
                 sampled_trans[i].p = float(priorities[i][0])
 
-    def _save(self, path: str) -> None:
-        path = utils.string_utils.to_folder_path(path)
+    def _save(self) -> None:
         torch.save({
             'q1': self.q1.state_dict(),
             'q2': self.q2.state_dict(),
@@ -169,14 +168,10 @@ class SAC (AgentBase):
             'actor_optim': self.actor_optim.state_dict(),
             'alpha_optim': self.alpha_optim.state_dict(),
             'critic_loss': self.critic_loss,
-        }, path + checkpoint_file)
+        }, self.save_dir + checkpoint_file)
 
-    def _load(self, path: str) -> None:
-        filepath = utils.string_utils.to_folder_path(path) + checkpoint_file
-        if not os.path.exists(filepath):
-            raise FileNotFoundError()
-
-        checkpoint = torch.load(filepath)
+    def _load(self) -> None:
+        checkpoint = torch.load(self.save_dir + checkpoint_file)
         self.q1.load_state_dict(checkpoint['q1'])
         self.q2.load_state_dict(checkpoint['q2'])
         self.q1_targ.load_state_dict(checkpoint['q1_targ'])

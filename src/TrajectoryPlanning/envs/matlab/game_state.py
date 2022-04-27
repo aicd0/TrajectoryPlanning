@@ -6,6 +6,8 @@ from typing import Any
 class GameState (GameStateBase):
     def __init__(self):
         GameStateBase.__init__(self)
+        self.achieved = None
+        self.desired = None
         self.joint_position = None
         self.collision = None
         self.deadlock = None
@@ -28,20 +30,3 @@ class GameState (GameStateBase):
             self.desired,
             obj_rel_pos,
         ), dtype=config.Common.DataType.Numpy)
-
-    def _to_list(self) -> list:
-        return [
-            self.joint_position,
-            self.collision,
-            self.deadlock,
-        ]
-
-    @staticmethod
-    def _from_list(x: list) -> Any:
-        o = GameState()
-        (
-            o.joint_position,
-            o.collision,
-            o.deadlock,
-        ) = x
-        return o

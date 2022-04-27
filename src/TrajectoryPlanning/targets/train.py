@@ -14,17 +14,16 @@ from framework.replay_buffer import Transition
 
 def main():
     # Load from configs.
-    algorithm = configs.get(config.Training.Agent.Algorithm_)
-    epsilon = configs.get(config.Training.Agent.ActionNoise.Normal.Epsilon_)
-    her_enabled = configs.get(config.Training.Agent.HER.Enabled_)
-    her_k = configs.get(config.Training.Agent.HER.K_)
+    algorithm = configs.get(config.Agent.Algorithm_)
+    epsilon = configs.get(config.Agent.ActionNoise.Normal.Epsilon_)
+    her_enabled = configs.get(config.Agent.HER.Enabled_)
+    her_k = configs.get(config.Agent.HER.K_)
     load_from_previous = configs.get(config.Training.LoadFromPreviousSession_)
     max_epoches = configs.get(config.Training.MaxEpoches_)
     max_iters = configs.get(config.Environment.MaxIterations_)
-    model_group = configs.get(config.Model.ModelGroup_)
-    noise_enabled = configs.get(config.Training.Agent.ActionNoise.Normal.Enabled_)
+    noise_enabled = configs.get(config.Agent.ActionNoise.Normal.Enabled_)
     protected_epoches = configs.get(config.Training.ProtectedEpoches_)
-    warmup_steps = configs.get(config.Training.Agent.Warmup_)
+    warmup_steps = configs.get(config.Agent.Warmup_)
 
     # Initialize environment.
     sim = Simulator()
@@ -34,14 +33,14 @@ def main():
     dim_state = state.dim_state()
 
     # Initialize agent.
-    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action, model_group)
+    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action)
 
     # Initialize noises.
     warmup_noise = UniformNoise(dim_action, -1, 1)
     normal_noise = OrnsteinUhlenbeckProcess(dim_action,
-        theta=configs.get(config.Training.Agent.ActionNoise.Normal.Theta_),
-        mu=configs.get(config.Training.Agent.ActionNoise.Normal.Mu_),
-        sigma=configs.get(config.Training.Agent.ActionNoise.Normal.Sigma_))
+        theta=configs.get(config.Agent.ActionNoise.Normal.Theta_),
+        mu=configs.get(config.Agent.ActionNoise.Normal.Mu_),
+        sigma=configs.get(config.Agent.ActionNoise.Normal.Sigma_))
 
     # Load evaluator.
     evaluator = Evaluator(agent)

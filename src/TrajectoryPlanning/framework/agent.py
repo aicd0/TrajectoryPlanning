@@ -1,6 +1,8 @@
+import config
 import numpy as np
 import os
 import utils.fileio
+import utils.name
 import utils.print
 import utils.string_utils
 from abc import abstractmethod
@@ -12,23 +14,15 @@ from framework.replay_buffer import ReplayBuffer
 replay_buffer_file = 'replay_buffer.npz'
 
 class AgentBase:
-    __agent_number = {}
+    __names = utils.name.Name('agent')
 
-    def __init__(self, dim_state: int, dim_action: int, model_group: str, name: str = None) -> None:
-        if name is None:
-            cls_name = self.__class__.__name__
-            if cls_name in AgentBase.__agent_number:
-                AgentBase.__agent_number[cls_name] += 1
-            else:
-                AgentBase.__agent_number[cls_name] = 1
-            self.name = 'agent_' + cls_name + '_' + str(AgentBase.__agent_number[cls_name])
-        else:
-            self.name = name
-
+    def __init__(self, dim_state: int, dim_action: int, name) -> None:
+        self.name = AgentBase.__names.get(self.__class__.__name__, name)
         self.configs = Configuration(self.name)
+        self.save_dir = utils.string_utils.to_folder_path(config.Agent.SaveDir + self.name)
         self.dim_state = dim_state
         self.dim_action = dim_action
-        self.model_group = model_group
+        self.model_group = self.configs.get(config.Agent.ModelGroup_)
 
         # Initialize the replay buffer.
         self.replay_buffer = ReplayBuffer(self.configs)
@@ -44,36 +38,45 @@ class AgentBase:
     def learn(self):
         raise NotImplementedError()
 
-    def save(self, path: str) -> None:
-        path = utils.string_utils.to_folder_path(path)
-        utils.fileio.mktree(path)
-
-        # Save model.
-        self._save(path)
-
-        # Save replay buffer.
-        np.savez(path + replay_buffer_file, data=np.array(self.replay_buffer.to_list(), dtype=object))
-
     @abstractmethod
-    def _save(self, path: str) -> None:
+    def _save(self) -> None:
         raise NotImplementedError()
 
-    def load(self, path: str, enable_learning: bool=True) -> bool:
-        path = utils.string_utils.to_folder_path(path)
+    def save(self) -> None:
+        utils.fileio.mktree(self.save_dir)
 
-        if not os.path.exists(path):
+        # Save model.
+        self._save()
+
+        # Save replay buffer.
+        np.savez(self.save_dir + replay_buffer_file, data=np.array(self.replay_buffer.to_list(), dtype=object))
+        
+    @abstractmethod
+    def _load(self) -> None:
+        raise NotImplementedError()
+
+    def load(self, enable_learning: bool=True) -> bool:
+        if not os.path.exists(self.save_dir):
             return False
         
-        self._load(path)
+        # Load model.
+        self._load()
 
         # [optional] Load replay buffer.
         if enable_learning:
-            obj = np.load(path + replay_buffer_file, allow_pickle=True)['data'].tolist()
+            obj = np.load(self.save_dir + replay_buffer_file, allow_pickle=True)['data'].tolist()
             self.replay_buffer = ReplayBuffer.from_list(obj, self.configs)
         
-        utils.print.put('Agent loaded')
+        utils.print.put('Agent loaded (' + self.name + ')')
         return True
-        
-    @abstractmethod
-    def _load(self, path: str) -> None:
-        raise NotImplementedError()
+
+from .algorithm import ddpg
+from .algorithm import sac
+
+def create_agent(algorithm: str, *arg, **kwarg) -> AgentBase:
+    if algorithm == 'ddpg':
+        return ddpg.DDPG(*arg, **kwarg)
+    elif algorithm == 'sac':
+        return sac.SAC(*arg, **kwarg)
+    else:
+        raise Exception('Unrecognized algorithm')

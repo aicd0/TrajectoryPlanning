@@ -5,9 +5,9 @@ import utils.fileio
 import utils.string_utils
 from .engine import Connector
 from .game_state import GameState
-from framework.configuration import global_configs as configs
+from envs.simulator import Simulator
 
-class Simulator:
+class Matlab(Simulator):
     def __init__(self):
         self.__state = None
         self.__plot_initialized = False
@@ -50,7 +50,7 @@ class Simulator:
         return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = configs.get(config.Environment.MATLAB.ActionAmp_)
+        action_amp = self.configs.get(config.Environment.MATLAB.ActionAmp_)
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)

@@ -7,6 +7,8 @@ from typing import Any
 class GameState (GameStateBase):
     def __init__(self):
         GameStateBase.__init__(self)
+        self.achieved = None
+        self.desired = None
         self.states = None
         self.reward_raw = None
         self.done = None
@@ -39,20 +41,3 @@ class GameState (GameStateBase):
 
     def _as_input(self) -> np.ndarray:
         return self.states
-
-    def _to_list(self) -> list:
-        return [
-            self.states,
-            self.reward_raw,
-            self.done,
-        ]
-
-    @staticmethod
-    def _from_list(x: list) -> Any:
-        o = GameState()
-        (
-            o.states,
-            o.reward_raw,
-            o.done,
-        ) = x
-        return o

@@ -13,6 +13,13 @@
   </joint>
 
   <link name="marker_red">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <sphere radius="${marker_point_radius}" />
+      </geometry>
+    </collision>
+
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>

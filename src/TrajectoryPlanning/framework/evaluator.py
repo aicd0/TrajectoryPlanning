@@ -6,7 +6,7 @@ import utils.string_utils
 from framework.agent import AgentBase
 from framework.configuration import Configuration
 
-global_checkpoint_file = 'global.npz'
+checkpoint_file = 'checkpoint.npz'
 
 class Evaluator:
     def __init__(self, agent: AgentBase):
@@ -15,7 +15,6 @@ class Evaluator:
 
         self.agent = agent
         self.save_dir = utils.string_utils.to_folder_path(config.Evaluator.SaveDir + agent.name)
-        self.model_dir = utils.string_utils.to_folder_path(self.save_dir + 'model')
         self.plot_data_dir = utils.string_utils.to_folder_path(self.save_dir + 'plot_data')
         self.figure_dir = utils.string_utils.to_folder_path(config.Evaluator.FigureDir + agent.name)
         self.plot_manager = agent.plot_manager
@@ -86,10 +85,10 @@ class Evaluator:
 
     def save(self) -> None:
         # Save model.
-        self.agent.save(self.model_dir)
+        self.agent.save()
 
         # Save plot data.
-        np.savez(self.save_dir + global_checkpoint_file,
+        np.savez(self.save_dir + checkpoint_file,
             epoches=self.epoches,
             steps=self.steps,
             last_save_step=self.last_save_step,
@@ -100,11 +99,11 @@ class Evaluator:
 
     def load(self, enable_learning=True) -> None:
         # Load model.
-        if not self.agent.load(self.model_dir, enable_learning=enable_learning):
-            raise RuntimeError('Failed to load agent.')
+        if not self.agent.load(enable_learning):
+            raise RuntimeError('Failed loading agent.')
         
         # Load plot data.
-        checkpoint = np.load(self.save_dir + global_checkpoint_file)
+        checkpoint = np.load(self.save_dir + checkpoint_file)
         self.epoches = int(checkpoint['epoches'])
         self.steps = int(checkpoint['steps'])
         self.last_save_step = int(checkpoint['last_save_step'])

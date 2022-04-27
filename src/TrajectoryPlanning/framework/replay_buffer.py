@@ -2,12 +2,13 @@ import config
 import numpy as np
 import random
 import utils.print
-from envs import GameState
+from envs.game_state import GameStateBase
 from framework.configuration import Configuration
 from typing import Any, Iterator
 
 class Transition:
-    def __init__(self, state: GameState, action: np.ndarray, reward: float, next_state: GameState, p: float=1) -> None:
+    def __init__(self, state: GameStateBase, action: np.ndarray, reward: float,
+                 next_state: GameStateBase, p: float=1) -> None:
         self.state = state
         self.action = action
         self.reward = reward
@@ -26,20 +27,20 @@ class Transition:
 
     def to_list(self) -> list:
         return [
-            self.state.to_list(),
+            self.state,
             self.action,
             self.reward,
-            self.next_state.to_list(),
+            self.next_state,
             self.p,
         ]
 
     @staticmethod
     def from_list(x: list):
         return Transition(
-            GameState.from_list(x[0]),
+            x[0],
             x[1],
             x[2],
-            GameState.from_list(x[3]),
+            x[3],
             x[4],
         )
 
@@ -114,7 +115,7 @@ class ReplayBufferIterator (Iterator):
 class ReplayBuffer:
     def __init__(self, configs: Configuration) -> None:
         self.__configs = configs
-        self.__capacity = self.__configs.get(config.Training.Agent.ReplayBuffer_)
+        self.__capacity = self.__configs.get(config.Agent.ReplayBuffer_)
         assert self.__capacity > 0
         self.__size = 0
         self.__begin = 0
@@ -159,7 +160,7 @@ class ReplayBuffer:
 
     def sample(self, count: int) -> list[Transition]:
         assert 0 <= count <= self.__size
-        per_enabled = self.__configs.get(config.Training.Agent.PER.Enabled_)
+        per_enabled = self.__configs.get(config.Agent.PER.Enabled_)
         if per_enabled:
             samples = []
             for _ in range(count):

@@ -33,4 +33,4 @@ class Game:
 
     @staticmethod
     def __distance2reward(d: float) -> float:
-        return 10 / (d * 5 + 1)
+        return 10 / (d * 5 + 1) + (10 if d < 0.05 else 0)

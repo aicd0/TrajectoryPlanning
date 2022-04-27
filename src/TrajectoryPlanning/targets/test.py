@@ -9,8 +9,7 @@ from framework.evaluator import Evaluator
 
 def main():
     # Load from configs.
-    algorithm = configs.get(config.Training.Agent.Algorithm_)
-    model_group = configs.get(config.Model.ModelGroup_)
+    algorithm = configs.get(config.Agent.Algorithm_)
 
     # Initialize environment.
     sim = Simulator()
@@ -20,7 +19,7 @@ def main():
     dim_state = state.dim_state()
 
     # Initialize agent.
-    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action, model_group)
+    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action)
 
     # Load evaluator.
     evaluator = Evaluator(agent)

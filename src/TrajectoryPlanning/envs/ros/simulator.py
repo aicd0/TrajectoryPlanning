@@ -1,17 +1,15 @@
 import config
 import functools
 import numpy as np
-import random
 import sys
 import threading
 import time
 import utils.platform
 import utils.string_utils
 from .game_state import GameState
-from framework.configuration import global_configs as configs
-from math import pi
+from envs.simulator import Simulator
 from typing import Any, Type
-from utils.workspace_estimator import WorkspaceEstimator
+from framework.workspace import Workspace
 
 # Import ROS and Gazebo packages.
 if utils.platform.is_windows():
@@ -28,14 +26,14 @@ joint_limits_low = np.array([
     -0.000006,
     -1.571984,
     -1.529065,
-    -1.570796,
+    -0.785398,
     -3.053450,
 ], dtype=config.Common.DataType.Numpy)
 joint_limits_high = np.array([
     3.053448,
     1.571984,
     1.571069,
-    1.570796,
+    0.785398,
     3.053439,
 ], dtype=config.Common.DataType.Numpy)
 
@@ -69,16 +67,24 @@ class TopicLibrary:
     link4_bumper = '/link4_bumper'
     link_states = '/gazebo/link_states'
 
-class Simulator:
+class ROS(Simulator):
     __client_activated = False
 
-    def __init__(self):
-        if Simulator.__client_activated:
+    def __init__(self, name: str=None):
+        super().__init__(name)
+
+        if ROS.__client_activated:
             raise Exception()
-        Simulator.__client_activated = True
-        self.__state = None
+        ROS.__client_activated = True
         self.__desired = None
-        self.__workspace_estimator = WorkspaceEstimator()
+        self.workspace = Workspace()
+
+        # Load configs
+        workspace = self.configs.get(config.Environment.ROS.Workspace_)
+        workspace_append = self.configs.get(config.Environment.ROS.WorkspaceAppend_)
+        workspace_max_link = self.configs.get(config.Environment.ROS.WorkspaceMaxLinkLength_)
+        workspace_max_retry = self.configs.get(config.Environment.ROS.WorkspaceMaxRetry_)
+        workspace_min_d = self.configs.get(config.Environment.ROS.WorkspaceMinNodeDistance_)
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -108,7 +114,20 @@ class Simulator:
         # Spin to listen to topic events.
         self.__spin_thread = SpinThread()
         self.__spin_thread.start()
-        time.sleep(1)
+
+        # Wait for topics.
+        while True:
+            self.__step_world()
+            if not self.state() is None:
+                break
+
+        # Load/generate workspace.
+        if not self.workspace.load(workspace) or workspace_append:
+            def gen_func():
+                self.__random_state()
+                return self.state().achieved
+            self.workspace.fill(gen_func, workspace_min_d, workspace_max_link, workspace_max_retry, append=True)
+            self.workspace.save(workspace)
 
     def __register_service(self, name: str, type: Type) -> None:
         if name in self.__services:
@@ -140,32 +159,9 @@ class Simulator:
         return self.__subscribers[name]
 
     def __step_world(self) -> None:
-        step_iterations = configs.get(config.Environment.ROS.StepIterations_)
+        step_iterations = self.configs.get(config.Environment.ROS.StepIterations_)
         self.__call_service(ServiceLibrary.step_world, step_iterations)
-        self.__state = None
-
-    def __get_state(self) -> GameState:
-        if self.__state is None:
-            joint_states: JointState = self.__get_subscriber(TopicLibrary.joint_states)
-            link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
-            link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
-            link3_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link3_bumper)
-            link4_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link4_bumper)
-            link_states: LinkStates = self.__get_subscriber(TopicLibrary.link_states)
-            
-            self.__state = GameState()
-            self.__state.from_joint_states(joint_states)
-            self.__state.collision = (
-                len(link1_bumper.states) +
-                len(link2_bumper.states) +
-                len(link3_bumper.states) +
-                len(link4_bumper.states)
-            ) > 0
-            pos_achieved = link_states.pose[link_states.name.index('robot::effector')].position
-            self.__state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
-            self.__state.desired = self.__desired
-            
-        return self.__state
+        self._state = None
 
     def __step(self, joint_position: np.ndarray) -> None:
         joint_position = np.clip(joint_position, joint_limits_low, joint_limits_high)
@@ -179,37 +175,61 @@ class Simulator:
         i = 0
         while True:
             self.__step_world()
-            state = self.__get_state()
+            state = self.state()
             if state.collision:
                 break
-            err = np.sum(np.abs(self.__get_state().joint_position - joint_position))
+            err = np.sum(np.abs(self.state().joint_position - joint_position))
             if err <= 1e-5:
                 break
             i += 1
             if i > 30:
                 raise Exception()
 
-    def __random_target(self) -> None:
-        if not self.__workspace_estimator.initialized():
-            self.__step_world()
-            self.__workspace_estimator.push(self.__get_state().achieved)
-        self.__desired = self.__workspace_estimator.sample()
-
     def __random_state(self) -> None:
         while True:
             joint_pos = np.random.uniform(joint_limits_low, joint_limits_high)
             self.__step(joint_pos)
-            random_state = self.__get_state()
-            if not random_state.collision:
+            state = self.state()
+            if not state.collision:
                 break
+
+    def _get_state(self) -> GameState:
+        joint_states: JointState = self.__get_subscriber(TopicLibrary.joint_states)
+        link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
+        link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
+        link3_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link3_bumper)
+        link4_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link4_bumper)
+        link_states: LinkStates = self.__get_subscriber(TopicLibrary.link_states)
+
+        if any([i is None for i in [
+            joint_states,
+            link1_bumper,
+            link2_bumper,
+            link3_bumper,
+            link4_bumper,
+            link_states,
+        ]]): return None
+        
+        state = GameState()
+        state.from_joint_states(joint_states)
+        state.collision = (
+            len(link1_bumper.states) +
+            len(link2_bumper.states) +
+            len(link3_bumper.states) +
+            len(link4_bumper.states)
+        ) > 0
+        pos_achieved = link_states.pose[link_states.name.index('robot::effector')].position
+        state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
+        state.desired = self.__desired
+        return state
         
     def close(self) -> None:
         self.__spin_thread.terminate()
         Simulator.__client_activated = False
 
-    def reset(self) -> GameState:
+    def _reset(self) -> None:
         # Set target point randomly.
-        self.__random_target()
+        self.__desired = self.workspace.sample()
 
         # Notify Gazebo to update target point.
         pt = Point()
@@ -219,21 +239,18 @@ class Simulator:
         self.__call_service(ServiceLibrary.place_markers, 'marker_red', pt)
 
         self.__random_state()
-        return self.__get_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = configs.get(config.Environment.ROS.ActionAmp_)
-        last_position = self.__get_state().joint_position
+        action_amp = self.configs.get(config.Environment.ROS.ActionAmp_)
+        last_position = self.state().joint_position
         this_position = last_position + action * action_amp
         self.__step(this_position)
-        state = self.__get_state()
+        state = self.state()
 
         if state.collision:
             self.__step(last_position)
-            state = self.__get_state()
+            state = self.state()
             state.collision = True
-        else:
-            self.__workspace_estimator.push(self.__get_state().achieved)
         return state
 
     def plot_reset(self) -> None:

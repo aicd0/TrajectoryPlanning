@@ -7,6 +7,8 @@ from typing import Any
 class GameState (GameStateBase):
     def __init__(self):
         GameStateBase.__init__(self)
+        self.achieved = None
+        self.desired = None
         self.joint_position: np.ndarray = None
         self.collision: bool = None
 
@@ -25,18 +27,3 @@ class GameState (GameStateBase):
             self.desired,
             obj_rel_pos,
         ], dtype=config.Common.DataType.Numpy)
-
-    def _to_list(self) -> list:
-        return [
-            self.joint_position,
-            self.collision,
-        ]
-
-    @staticmethod
-    def _from_list(x: list) -> Any:
-        o = GameState()
-        (
-            o.joint_position,
-            o.collision,
-        ) = x
-        return o

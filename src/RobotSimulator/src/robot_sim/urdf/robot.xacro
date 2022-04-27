@@ -36,8 +36,8 @@
   <xacro:property name="joint1_high" value="1.571984" />
   <xacro:property name="joint2_low" value="-1.529065" />
   <xacro:property name="joint2_high" value="1.571069" />
-  <xacro:property name="joint3_low" value="-1.570796" />
-  <xacro:property name="joint3_high" value="1.570796" />
+  <xacro:property name="joint3_low" value="-0.785398" />
+  <xacro:property name="joint3_high" value="0.785398" />
   <xacro:property name="joint4_low" value="-3.053450" />
   <xacro:property name="joint4_high" value="3.053439" />
   

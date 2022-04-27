@@ -1,9 +1,9 @@
 import numpy as np
 import torch
-import utils.string_utils
+from utils.string_utils import to_folder_path as todir
 
 class Common:
-    OutputDir = 'output/gazebo_sac'
+    ProjectDir = 'main'
     ConfigDir = 'configs'
     Target_ = ('Common/Target', 'train')
 
@@ -12,7 +12,6 @@ class Common:
         Torch = torch.float32
 
 class Environment:
-    Platform_ = ('Environment/Platform', 'ros')
     MaxIterations_ = ('Environment/MaxIterations', 10000)
 
     class Gym:
@@ -30,47 +29,53 @@ class Environment:
         ActionAmp_ = ('Environment/ROS/ActionAmp', 0.1)
         MaxIterations_ = ('Environment/ROS/MaxIterations', 150)
         StepIterations_ = ('Environment/ROS/StepIterations', 50) # make sure corresponding to sensor frequency
+        Workspace_ = ('Environment/ROS/Workspace', 'g50')
+        WorkspaceAppend_ = ('Environment/ROS/WorkspaceAppend', False)
+        WorkspaceMaxLinkLength_ = ('Environment/ROS/WorkspaceMaxLinkLength', 0.08)
+        WorkspaceMaxRetry_ = ('Environment/ROS/WorkspaceMaxRetry', 20)
+        WorkspaceMinNodeDistance_ = ('Environment/ROS/WorkspaceNodeDistance', 0.04)
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
-    ModelGroup_ = ('Model/ModelGroup', 'sac/l3')
+
+class Agent:
+    SaveDir = 'agents'
+    Algorithm_ = ('Agent/Algorithm', 'sac')
+    BatchSize_ = ('Agent/BatchSize', 64)
+    Gamma_ = ('Agent/Gamma', 0.99)
+    LRActor_ = ('Agent/LRActor', 0.0001)
+    LRCritic_ = ('Agent/LRCritic', 0.001)
+    ModelGroup_ = ('Agent/ModelGroup', 'sac/l3')
+    ReplayBuffer_ = ('Agent/ReplayBuffer', 400000)
+    Tau_ = ('Agent/Tau', 0.001)
+    Warmup_ = ('Agent/Warmup', 1000)
+
+    class ActionNoise:
+        class Normal:
+            Enabled_ = ('Agent/ActionNoise/Normal/Enabled', True)
+            Epsilon_ = ('Agent/ActionNoise/Normal/Epsilon', 50000)
+            Mu_ = ('Agent/ActionNoise/Normal/Mu', 0.0)
+            Sigma_ = ('Agent/ActionNoise/Normal/Sigma', 0.2)
+            Theta_ = ('Agent/ActionNoise/Normal/Theta', 0.15)
+
+    class HER:
+        Enabled_ = ('Agent/HER/Enabled', True)
+        K_ = ('Agent/HER/K', 2)
+
+    class PER:
+        Enabled_ = ('Agent/PER/Enabled', False)
+        Alpha_ = ('Agent/PER/Alpha', 0.8)
+        K_ = ('Agent/PER/K', 0.01)
+
+    class SAC:
+        AutoEntropyTuning_ = ('Agent/SAC/AutoEntropyTuning', True)
+        LRAlpha_ = ('Agent/SAC/LRAlpha', 0.0001)
 
 class Training:
     MinLogStepInterval = 500
     LoadFromPreviousSession_ = ('Training/LoadFromPreviousSession', False)
     MaxEpoches_ = ('Training/MaxEpoches', 200000)
     ProtectedEpoches_ = ('Training/ProtectedEpoches', 20)
-
-    class Agent:
-        Algorithm_ = ('Training/Agent/Algorithm', 'sac')
-        BatchSize_ = ('Training/Agent/BatchSize', 64)
-        Gamma_ = ('Training/Agent/Gamma', 0.99)
-        LRActor_ = ('Training/Agent/LRActor', 0.0001)
-        LRCritic_ = ('Training/Agent/LRCritic', 0.001)
-        ReplayBuffer_ = ('Training/Agent/ReplayBuffer', 200000)
-        Tau_ = ('Training/Agent/Tau', 0.001)
-        Warmup_ = ('Training/Agent/Warmup', 1000)
-
-        class ActionNoise:
-            class Normal:
-                Enabled_ = ('Training/Agent/ActionNoise/Normal/Enabled', True)
-                Epsilon_ = ('Training/Agent/ActionNoise/Normal/Epsilon', 50000)
-                Mu_ = ('Training/Agent/ActionNoise/Normal/Mu', 0.0)
-                Sigma_ = ('Training/Agent/ActionNoise/Normal/Sigma', 0.2)
-                Theta_ = ('Training/Agent/ActionNoise/Normal/Theta', 0.15)
-
-        class HER:
-            Enabled_ = ('Training/Agent/HER/Enabled', True)
-            K_ = ('Training/Agent/HER/K', 2)
-
-        class PER:
-            Enabled_ = ('Training/Agent/PER/Enabled', False)
-            Alpha_ = ('Training/Agent/PER/Alpha', 0.8)
-            K_ = ('Training/Agent/PER/K', 0.01)
-
-        class SAC:
-            AutoEntropyTuning_ = ('Training/Agent/SAC/AutoEntropyTuning', True)
-            LRAlpha_ = ('Training/Agent/SAC/LRAlpha', 0.0001)
 
 class Testing:
     DetachAgent = False
@@ -79,7 +84,7 @@ class Testing:
     MaxIterations = 10000
 
 class Evaluator:
-    SaveDir = 'checkpoint'
+    SaveDir = 'evaluators'
     FigureDir = 'figures'
     EpochWindowSize_ = ('Evaluator/EpochWindowSize', 20)
     MinSaveStepInterval_ = ('Evaluator/MinSaveStepInterval', 1000)
@@ -90,10 +95,16 @@ class Evaluator:
         Width_ = ('Evaluator/Figure/Width', 9)
         MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
 
+class Workspace:
+    SaveDir = 'workspace'
+
 # Post-initialization
-Common.OutputDir = utils.string_utils.to_folder_path(Common.OutputDir)
-Common.ConfigDir = utils.string_utils.to_folder_path(Common.OutputDir + Common.ConfigDir)
-Environment.MATLAB.OutputDir = utils.string_utils.to_folder_path(Common.OutputDir + Environment.MATLAB.OutputDir)
-Environment.ROS.ProjectLibPath = utils.string_utils.to_folder_path(Environment.ROS.ProjectLibPath)
-Evaluator.SaveDir = utils.string_utils.to_folder_path(Common.OutputDir + Evaluator.SaveDir)
-Evaluator.FigureDir = utils.string_utils.to_folder_path(Common.OutputDir + Evaluator.FigureDir)
+__output_dir = todir('output')
+Common.ProjectDir = todir(__output_dir + Common.ProjectDir)
+Common.ConfigDir = todir(Common.ProjectDir + Common.ConfigDir)
+Environment.MATLAB.OutputDir = todir(Common.ProjectDir + Environment.MATLAB.OutputDir)
+Environment.ROS.ProjectLibPath = todir(Environment.ROS.ProjectLibPath)
+Agent.SaveDir = todir(Common.ProjectDir + Agent.SaveDir)
+Evaluator.SaveDir = todir(Common.ProjectDir + Evaluator.SaveDir)
+Evaluator.FigureDir = todir(Common.ProjectDir + Evaluator.FigureDir)
+Workspace.SaveDir = todir(__output_dir + Workspace.SaveDir)

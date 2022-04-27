@@ -3,6 +3,7 @@ import numpy as np
 import os
 import utils.platform
 from envs.gym.game_state import GameState
+from envs.simulator import Simulator
 from framework.configuration import global_configs as configs
 
 # Import gym packages.
@@ -11,7 +12,7 @@ if utils.platform.is_windows():
 import gym
 from gym.spaces import Discrete
 
-class Simulator:
+class Gym(Simulator):
     def __init__(self):
         self.__env = gym.make(configs.get(config.Environment.Gym.Environment_))
 
