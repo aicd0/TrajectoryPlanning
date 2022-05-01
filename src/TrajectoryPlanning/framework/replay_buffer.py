@@ -2,13 +2,13 @@ import config
 import numpy as np
 import random
 import utils.print
-from envs.game_state import GameStateBase
+from envs.state import State
 from framework.configuration import Configuration
 from typing import Any, Iterator
 
 class Transition:
-    def __init__(self, state: GameStateBase, action: np.ndarray, reward: float,
-                 next_state: GameStateBase, p: float=1) -> None:
+    def __init__(self, state: State, action: np.ndarray, reward: float,
+                 next_state: State, p: float=1) -> None:
         self.state = state
         self.action = action
         self.reward = reward

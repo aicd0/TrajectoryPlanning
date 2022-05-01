@@ -7,7 +7,7 @@ import threading
 import time
 import utils.platform
 import utils.string_utils
-from .game_state import GameState
+from .state import GazeboState
 from envs.simulator import Simulator
 from framework.robot import Robot1
 from framework.workspace import Workspace
@@ -15,8 +15,8 @@ from typing import Any, Type
 
 # Import ROS and Gazebo packages.
 if utils.platform.is_windows():
-    sys.path.append(config.Environment.ROS.ROSLibPath)
-    sys.path.append(config.Environment.ROS.ProjectLibPath)
+    sys.path.append(config.Environment.Gazebo.ROSLibPath)
+    sys.path.append(config.Environment.Gazebo.ProjectLibPath)
 import rospy
 from gazebo_msgs.msg import ContactsState, LinkStates
 from geometry_msgs.msg import Point
@@ -24,7 +24,7 @@ from robot_sim.srv import PlaceMarkers, StepWorld
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
 
-class SpinThread (threading.Thread):
+class SpinThread(threading.Thread):
     def run(self):
         if not rospy.core.is_initialized():
             raise rospy.exceptions.ROSInitException("client code must call rospy.init_node() first")
@@ -54,15 +54,15 @@ class TopicLibrary:
     link4_bumper = '/link4_bumper'
     link_states = '/gazebo/link_states'
 
-class ROS(Simulator):
+class Gazebo(Simulator):
     __client_activated = False
 
     def __init__(self, name: str=None):
         super().__init__(name)
 
-        if ROS.__client_activated:
+        if Gazebo.__client_activated:
             raise Exception()
-        ROS.__client_activated = True
+        Gazebo.__client_activated = True
 
         self.robot = Robot1()
         self.workspace = Workspace()
@@ -76,10 +76,10 @@ class ROS(Simulator):
         self.__desired = None
 
         # Load configs
-        self.action_amp = self.configs.get(config.Environment.ROS.ActionAmp_)
-        workspace_name = self.configs.get(config.Environment.ROS.Workspace_)
-        workspace_max_d = self.configs.get(config.Environment.ROS.WorkspaceMaxD_)
-        workspace_min_r = self.configs.get(config.Environment.ROS.WorkspaceMinR_)
+        self.action_amp = self.configs.get(config.Environment.Gazebo.ActionAmp_)
+        workspace_name = self.configs.get(config.Environment.Gazebo.Workspace_)
+        workspace_max_d = self.configs.get(config.Environment.Gazebo.WorkspaceMaxD_)
+        workspace_min_r = self.configs.get(config.Environment.Gazebo.WorkspaceMinR_)
 
         # Load/Make workspace.
         if not self.workspace.load(workspace_name):
@@ -161,7 +161,7 @@ class ROS(Simulator):
         return self.__subscribers[name]
 
     def __step_world(self) -> None:
-        step_iterations = self.configs.get(config.Environment.ROS.StepIterations_)
+        step_iterations = self.configs.get(config.Environment.Gazebo.StepIterations_)
         self.__call_service(ServiceLibrary.step_world, step_iterations)
         self._state = None
 
@@ -195,7 +195,7 @@ class ROS(Simulator):
             if not state.collision:
                 break
 
-    def _get_state(self) -> GameState:
+    def _get_state(self) -> GazeboState:
         joint_states: JointState = self.__get_subscriber(TopicLibrary.joint_states)
         link1_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link1_bumper)
         link2_bumper: ContactsState = self.__get_subscriber(TopicLibrary.link2_bumper)
@@ -212,7 +212,7 @@ class ROS(Simulator):
             link_states,
         ]]): return None
         
-        state = GameState()
+        state = GazeboState()
         state.from_joint_states(joint_states)
         state.collision = (
             len(link1_bumper.states) +
@@ -242,7 +242,7 @@ class ROS(Simulator):
 
         self.__random_state()
 
-    def step(self, action: np.ndarray) -> GameState:
+    def step(self, action: np.ndarray) -> GazeboState:
         action.clip(-1, 1)
         last_position = self.state().joint_position
         this_position = last_position + action * self.action_amp

@@ -2,21 +2,20 @@ import config
 import math
 import models
 import numpy as np
-import os
 import torch
 import utils.fileio
 import utils.math
 import utils.print
 import utils.string_utils
-from envs.game_state import GameStateBase
-from framework.agent import AgentBase
+from envs.state import State
+from framework.agent import Agent
 from torch import nn
 from torch.distributions import Normal
 from torch.optim import Adam
 
 checkpoint_file = 'checkpoint.pt'
 
-class SAC (AgentBase):
+class SAC(Agent):
     def __init__(self, dim_state: int, dim_action: int, name: str = None) -> None:
         super().__init__(dim_state, dim_action, name)
 
@@ -72,7 +71,7 @@ class SAC (AgentBase):
         log_prob = log_prob.sum(1, keepdim=True)
         return actions, log_prob, torch.tanh(mean)
 
-    def sample_action(self, state: GameStateBase, deterministic: bool) -> np.ndarray:
+    def sample_action(self, state: State, deterministic: bool) -> np.ndarray:
         state = torch.tensor(state.as_input()[np.newaxis, :], dtype=config.Common.DataType.Torch)
         action, _, mean = self.__sample_action(state)
         return (mean if deterministic else action).detach().numpy()[0]

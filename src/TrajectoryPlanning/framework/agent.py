@@ -6,18 +6,18 @@ import utils.name
 import utils.print
 import utils.string_utils
 from abc import abstractmethod
-from envs.game_state import GameStateBase
+from envs.state import State
 from framework.configuration import Configuration
 from framework.plot import PlotManager
 from framework.replay_buffer import ReplayBuffer
 
 replay_buffer_file = 'replay_buffer.npz'
 
-class AgentBase:
+class Agent:
     __names = utils.name.Name('agent')
 
     def __init__(self, dim_state: int, dim_action: int, name) -> None:
-        self.name = AgentBase.__names.get(self.__class__.__name__, name)
+        self.name = Agent.__names.get(self.__class__.__name__, name)
         self.configs = Configuration(self.name)
         self.save_dir = utils.string_utils.to_folder_path(config.Agent.SaveDir + self.name)
         self.dim_state = dim_state
@@ -31,7 +31,7 @@ class AgentBase:
         self.plot_manager = PlotManager()
 
     @abstractmethod
-    def sample_action(self, state: GameStateBase, deterministic: bool) -> np.ndarray:
+    def sample_action(self, state: State, deterministic: bool) -> np.ndarray:
         raise NotImplementedError()
 
     @abstractmethod
@@ -73,7 +73,7 @@ class AgentBase:
 from .algorithm import ddpg
 from .algorithm import sac
 
-def create_agent(algorithm: str, *arg, **kwarg) -> AgentBase:
+def create_agent(algorithm: str, *arg, **kwarg) -> Agent:
     if algorithm == 'ddpg':
         return ddpg.DDPG(*arg, **kwarg)
     elif algorithm == 'sac':

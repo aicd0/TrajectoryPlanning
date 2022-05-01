@@ -4,7 +4,7 @@ from framework.noise import Noise
 # [reference] https://github.com/ghliu/pytorch-ddpg/blob/master/random_process.py
 # [reference] https://github.com/matthiasplappert/keras-rl/blob/master/rl/random.py
 
-class AnnealedGaussianProcess (Noise):
+class AnnealedGaussianProcess(Noise):
     def __init__(self, dim, mu, sigma, sigma_min, n_steps_annealing):
         super().__init__(dim)
         self.mu = mu
@@ -26,7 +26,7 @@ class AnnealedGaussianProcess (Noise):
         return sigma
 
 # Based on http://math.stackexchange.com/questions/1287634/implementing-ornstein-uhlenbeck-in-matlab
-class OrnsteinUhlenbeckProcess (AnnealedGaussianProcess):
+class OrnsteinUhlenbeckProcess(AnnealedGaussianProcess):
     def __init__(self, dim, theta, mu=0., sigma=1., dt=1e-2, x0=None, sigma_min=None, n_steps_annealing=1000):
         super().__init__(dim, mu=mu, sigma=sigma, sigma_min=sigma_min, n_steps_annealing=n_steps_annealing)
         self.theta = theta

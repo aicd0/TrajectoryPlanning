@@ -6,6 +6,7 @@
   <arg name="gui" default="true"/>
   <arg name="headless" default="false"/>
   <arg name="debug" default="false"/>
+  <arg name="obstacles" default="true"/>
 
   <!-- We resume the logic in empty_world.launch, changing only the name of the world to be launched -->
   <include file="$(find gazebo_ros)/launch/empty_world.launch">
@@ -22,7 +23,7 @@
     <include file="$(find robot_sim)/launch/robot.spawn.launch" />
   </group>
 
-  <group ns="obstacles">
+  <group ns="obstacles" if="$(arg obstacles)">
     <param name="tf_prefix" value="obstacles_tf" />
     <include file="$(find robot_sim)/launch/obstacles.spawn.launch" />
   </group>

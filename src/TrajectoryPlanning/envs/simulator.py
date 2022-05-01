@@ -1,6 +1,6 @@
 import numpy as np
 import utils.name
-from .game_state import GameStateBase
+from .state import State
 from abc import abstractmethod
 from framework.configuration import Configuration
 
@@ -13,10 +13,10 @@ class Simulator:
         self._state = None
 
     @abstractmethod
-    def _get_state(self) -> GameStateBase:
+    def _get_state(self) -> State:
         raise NotImplementedError()
 
-    def state(self) -> GameStateBase:
+    def state(self) -> State:
         if self._state is None:
             self._state = self._get_state()
         return self._state
@@ -29,12 +29,12 @@ class Simulator:
     def _reset(self) -> None:
         raise NotImplementedError()
 
-    def reset(self) -> GameStateBase:
+    def reset(self) -> State:
         self._reset()
         return self.state()
 
     @abstractmethod
-    def step(self, action: np.ndarray) -> GameStateBase:
+    def step(self, action: np.ndarray) -> State:
         raise NotImplementedError()
     
     @abstractmethod
@@ -48,16 +48,3 @@ class Simulator:
     @abstractmethod
     def dim_action(self) -> int:
         raise NotImplementedError()
- 
-def create_simulator(platform: str, *arg, **kwarg) -> Simulator:
-    if platform == 'gym':
-        from .gym.simulator import Gym
-        return Gym(*arg, **kwarg)
-    elif platform == 'matlab':
-        from .matlab.simulator import Matlab
-        return Matlab(*arg, **kwarg)
-    elif platform == 'ros':
-        from .ros.simulator import ROS
-        return ROS(*arg, **kwarg)
-    else:
-        raise Exception('Unrecognized platform')

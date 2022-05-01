@@ -2,20 +2,19 @@ import config
 import math
 import models
 import numpy as np
-import os
 import torch
 import utils.fileio
 import utils.math
 import utils.print
 import utils.string_utils
-from envs.game_state import GameStateBase
-from framework.agent import AgentBase
+from envs.state import State
+from framework.agent import Agent
 from torch import nn
 from torch import optim
 
 checkpoint_file = 'checkpoint.pt'
 
-class DDPG (AgentBase):
+class DDPG(Agent):
     def __init__(self, dim_state: int, dim_action: int, name: str = None) -> None:
         super().__init__(dim_state, dim_action, name)
 
@@ -48,7 +47,7 @@ class DDPG (AgentBase):
         self.plot_manager.create_plot(self.plot_critic_loss, 'Critic Loss', 'Loss')
         self.plot_manager.create_plot(self.plot_actor_loss, 'Actor Loss', 'Loss')
 
-    def sample_action(self, state: GameStateBase, deterministic: bool) -> np.ndarray:
+    def sample_action(self, state: State, deterministic: bool) -> np.ndarray:
         state = torch.tensor(state.as_input(), dtype=config.Common.DataType.Torch)
         return self.actor(state).detach().numpy()
 

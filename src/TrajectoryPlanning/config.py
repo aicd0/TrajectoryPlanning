@@ -14,6 +14,16 @@ class Common:
 class Environment:
     MaxIterations_ = ('Environment/MaxIterations', 10000)
 
+    class Gazebo:
+        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows
+        ProjectLibPath = '../RobotSimulator/devel/lib/site-packages' # only for Windows
+        ActionAmp_ = ('Environment/Gazebo/ActionAmp', 0.1)
+        MaxSteps_ = ('Environment/Gazebo/MaxSteps', 150)
+        StepIterations_ = ('Environment/Gazebo/StepIterations', 50) # make sure corresponding to sensor frequency
+        Workspace_ = ('Environment/Gazebo/Workspace', 'd6')
+        WorkspaceMaxD_ = ('Environment/Gazebo/WorkspaceMaxD', 0.05)
+        WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.05)
+
     class Gym:
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows
         Environment_ = ('Environment/Gym/Environment', 'HalfCheetah-v2')
@@ -22,16 +32,6 @@ class Environment:
         OutputDir = 'MATLAB'
         SessionFile = '../../output/MatlabLauncher/session.txt'
         ActionAmp_ = ('Environment/MATLAB/ActionAmp', 0.1)
-
-    class ROS:
-        ROSLibPath = 'C:/opt/ros/noetic/x64/Lib/site-packages' # only for Windows
-        ProjectLibPath = '../RobotSimulator/devel/lib/site-packages' # only for Windows
-        ActionAmp_ = ('Environment/ROS/ActionAmp', 0.1)
-        MaxIterations_ = ('Environment/ROS/MaxIterations', 150)
-        StepIterations_ = ('Environment/ROS/StepIterations', 50) # make sure corresponding to sensor frequency
-        Workspace_ = ('Environment/ROS/Workspace', 'd6')
-        WorkspaceMaxD_ = ('Environment/ROS/WorkspaceMaxD', 0.05)
-        WorkspaceMinR_ = ('Environment/ROS/WorkspaceMinR', 0.05)
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
@@ -107,7 +107,7 @@ __output_dir = todir('output')
 Common.ProjectDir = todir(__output_dir + Common.ProjectDir)
 Common.ConfigDir = todir(Common.ProjectDir + Common.ConfigDir)
 Environment.MATLAB.OutputDir = todir(Common.ProjectDir + Environment.MATLAB.OutputDir)
-Environment.ROS.ProjectLibPath = todir(Environment.ROS.ProjectLibPath)
+Environment.Gazebo.ProjectLibPath = todir(Environment.Gazebo.ProjectLibPath)
 Agent.SaveDir = todir(Common.ProjectDir + Agent.SaveDir)
 Evaluator.SaveDir = todir(Common.ProjectDir + Evaluator.SaveDir)
 Evaluator.FigureDir = todir(Common.ProjectDir + Evaluator.FigureDir)

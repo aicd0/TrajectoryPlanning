@@ -2,7 +2,7 @@ import numpy as np
 from abc import ABCMeta, abstractmethod
 from typing import Any
 
-class GameStateBase:
+class State:
     __metaclass__ = ABCMeta
 
     def __init__(self):

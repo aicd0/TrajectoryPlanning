@@ -1,18 +1,17 @@
 import config
 import numpy as np
-from envs.game_state import GameStateBase
-from typing import Any
+from envs.state import State
 
-class GameState (GameStateBase):
+class MatlabState(State):
     def __init__(self):
-        GameStateBase.__init__(self)
+        super().__init__()
         self.achieved = None
         self.desired = None
         self.joint_position = None
         self.collision = None
         self.deadlock = None
 
-    def from_matlab(self, src):
+    def from_matlab(self, src) -> None:
         """Convert states from MATLAB."""
         self.joint_position = np.array(src['config']._data, dtype=config.Common.DataType.Numpy)
         self.achieved = np.array(src['achieved']._data, dtype=config.Common.DataType.Numpy)

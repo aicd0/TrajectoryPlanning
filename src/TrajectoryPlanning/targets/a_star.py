@@ -1,12 +1,12 @@
 import config
 import utils.print
-from envs.simulator import create_simulator
+from envs import create_environment
 from framework.algorithm.a_star import AStarPlanner
 from framework.configuration import global_configs as configs
 
 def main():
     # Load environment.
-    sim = create_simulator('ros')
+    sim, _ = create_environment('gazebo')
 
     # Load planner.
     planner = AStarPlanner(sim)

@@ -1,12 +1,12 @@
 import config
 import numpy as np
-from envs.game_state import GameStateBase
+from envs.state import State
 from math import pi
 from typing import Any
 
-class GameState (GameStateBase):
+class GazeboState(State):
     def __init__(self):
-        GameStateBase.__init__(self)
+        super().__init__()
         self.achieved = None
         self.desired = None
         self.joint_position: np.ndarray = None

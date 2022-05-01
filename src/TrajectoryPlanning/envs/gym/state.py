@@ -1,19 +1,18 @@
 import config
 import numpy as np
-from envs.game_state import GameStateBase
+from envs.state import State
 from framework.configuration import global_configs as configs
-from typing import Any
 
-class GameState (GameStateBase):
+class GymState(State):
     def __init__(self):
-        GameStateBase.__init__(self)
+        super().__init__()
         self.achieved = None
         self.desired = None
         self.states = None
         self.reward_raw = None
         self.done = None
 
-    def __from_raw_state(self, state_raw):
+    def __from_raw_state(self, state_raw) -> None:
         env_name = configs.get(config.Environment.Gym.Environment_)
         if env_name == 'FetchReach-v1':
             self.achieved = state_raw['achieved_goal']

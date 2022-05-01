@@ -2,7 +2,6 @@ import numpy as np
 import utils.math
 from abc import abstractmethod
 from envs.simulator import Simulator
-from framework.agent import AgentBase
 
 class Planner:
     def __init__(self, sim: Simulator) -> None:

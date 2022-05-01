@@ -1,12 +1,11 @@
 import random
 from copy import copy
-from envs import Game
+from envs.reward import Reward
 from framework.replay_buffer import Transition
 
-def augment_replay_buffer(replay_buffer: list[Transition], k: int) -> list[Transition]:
+def her(replay_buffer: list[Transition], k: int, game: Reward) -> list[Transition]:
     old_replay_buffer: list[Transition] = []
     new_replay_buffer: list[Transition] = []
-    game = Game()
 
     for trans in replay_buffer:
         if trans.state.support_her():
@@ -35,5 +34,4 @@ def augment_replay_buffer(replay_buffer: list[Transition], k: int) -> list[Trans
 
             new_trans = Transition(new_state, new_action, reward, new_next_state)
             new_replay_buffer.append(new_trans)
-    
     return new_replay_buffer

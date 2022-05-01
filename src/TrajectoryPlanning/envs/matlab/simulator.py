@@ -4,7 +4,7 @@ import numpy as np
 import utils.fileio
 import utils.string_utils
 from .engine import Connector
-from .game_state import GameState
+from .state import MatlabState
 from envs.simulator import Simulator
 
 class Matlab(Simulator):
@@ -30,9 +30,9 @@ class Matlab(Simulator):
     def close(self):
         pass
 
-    def __get_state(self) -> GameState:
+    def __get_state(self) -> MatlabState:
         if self.__state is None:
-            self.__state = GameState()
+            self.__state = MatlabState()
             self.__state.from_matlab(self.eng.workspace['state'])
         return self.__state
 
@@ -45,11 +45,11 @@ class Matlab(Simulator):
         self.eng.workspace['action'] = matlab.double(action)
         self.__step_world()
 
-    def reset(self) -> GameState:
+    def reset(self) -> MatlabState:
         self.eng.simReset(nargout=0)
         return self.__get_state()
 
-    def step(self, action: np.ndarray) -> GameState:
+    def step(self, action: np.ndarray) -> MatlabState:
         action_amp = self.configs.get(config.Environment.MATLAB.ActionAmp_)
         last_position = self.__get_state().joint_position
         this_position = last_position + action * action_amp

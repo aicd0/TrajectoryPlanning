@@ -3,13 +3,13 @@ import numpy as np
 import utils.fileio
 import utils.print
 import utils.string_utils
-from framework.agent import AgentBase
+from framework.agent import Agent
 from framework.configuration import Configuration
 
 checkpoint_file = 'checkpoint.npz'
 
 class Evaluator:
-    def __init__(self, agent: AgentBase):
+    def __init__(self, agent: Agent):
         self.configs = Configuration('evaluator_' + agent.name)
         window = self.configs.get(config.Evaluator.EpochWindowSize_)
 
@@ -88,6 +88,7 @@ class Evaluator:
         self.agent.save()
 
         # Save plot data.
+        utils.fileio.mktree(self.save_dir)
         np.savez(self.save_dir + checkpoint_file,
             epoches=self.epoches,
             steps=self.steps,

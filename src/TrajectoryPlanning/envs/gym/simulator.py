@@ -2,7 +2,7 @@ import config
 import numpy as np
 import os
 import utils.platform
-from envs.gym.game_state import GameState
+from .state import GymState
 from envs.simulator import Simulator
 from framework.configuration import global_configs as configs
 
@@ -28,18 +28,18 @@ class Gym(Simulator):
     def close(self):
         self.__env.close()
 
-    def reset(self) -> GameState:
+    def reset(self) -> GymState:
         state_raw = self.__env.reset()
-        game_state = GameState()
+        game_state = GymState()
         game_state.from_reset(state_raw)
         return game_state
 
-    def step(self, action: np.ndarray) -> GameState:
+    def step(self, action: np.ndarray) -> GymState:
         if self.action_discrete:
             action = np.clip(int((action[0] + 1) / 2 * self.n_action), 0, self.n_action - 1)
 
         state, reward_raw, done, _ = self.__env.step(action)
-        game_state = GameState()
+        game_state = GymState()
         game_state.from_step(state, reward_raw, done)
         return game_state
 

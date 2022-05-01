@@ -1,11 +1,10 @@
 import config
-import framework.algorithm
 import framework.algorithm.her
-import numpy as np
 import time
 import utils.print
 import utils.string_utils
-from envs import Game, Simulator
+from envs import create_environment
+from framework.agent import create_agent
 from framework.configuration import global_configs as configs
 from framework.evaluator import Evaluator
 from framework.noise.ou import OrnsteinUhlenbeckProcess
@@ -26,14 +25,13 @@ def main():
     warmup_steps = configs.get(config.Agent.Warmup_)
 
     # Initialize environment.
-    sim = Simulator()
-    game = Game()
+    sim, game = create_environment('gazebo')
     state = sim.reset()
     dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
     # Initialize agent.
-    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action)
+    agent = create_agent(algorithm, dim_state, dim_action, name='joint_solver')
 
     # Initialize noises.
     warmup_noise = UniformNoise(dim_action, -1, 1)
@@ -99,7 +97,7 @@ def main():
         
         # [optional] Perform HER.
         if her_enabled:
-            epoch_replay_buffer = framework.algorithm.her.augment_replay_buffer(epoch_replay_buffer, her_k)
+            epoch_replay_buffer = framework.algorithm.her.her(epoch_replay_buffer, her_k, game)
             for trans in epoch_replay_buffer:
                 agent.replay_buffer.append(trans)
 
@@ -108,5 +106,4 @@ def main():
         if (evaluator.steps - last_log_step) >= config.Training.MinLogStepInterval:
             last_log_step = evaluator.steps
             utils.print.put('[Evaluate] ' + utils.string_utils.dict_to_str(evaluator.summary()))
-    
     sim.close()

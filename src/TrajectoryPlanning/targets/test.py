@@ -1,9 +1,9 @@
 import config
-import framework.algorithm
 import numpy as np
 import utils.print
 import utils.string_utils
-from envs import Game, Simulator
+from envs import create_environment
+from framework.agent import create_agent
 from framework.configuration import global_configs as configs
 from framework.evaluator import Evaluator
 
@@ -12,14 +12,13 @@ def main():
     algorithm = configs.get(config.Agent.Algorithm_)
 
     # Initialize environment.
-    sim = Simulator()
-    game = Game()
+    sim, game = create_environment('gazebo')
     state = sim.reset()
     dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
     # Initialize agent.
-    agent = framework.algorithm.create_agent(algorithm, dim_state, dim_action)
+    agent = create_agent(algorithm, dim_state, dim_action)
 
     # Load evaluator.
     evaluator = Evaluator(agent)
@@ -45,9 +44,7 @@ def main():
             epoch_reward += reward
             step_rewards.append(reward)
             sim.plot_step()
-        
         epoch_rewards.append(epoch_reward)
-
     sim.close()
 
     step_rewards = np.array(step_rewards, dtype=config.Common.DataType.Numpy)
