@@ -1,4 +1,5 @@
 import config
+import framework.geometry as geo
 import functools
 import numpy as np
 import sys
@@ -8,8 +9,9 @@ import utils.platform
 import utils.string_utils
 from .game_state import GameState
 from envs.simulator import Simulator
-from typing import Any, Type
+from framework.robot import Robot1
 from framework.workspace import Workspace
+from typing import Any, Type
 
 # Import ROS and Gazebo packages.
 if utils.platform.is_windows():
@@ -21,21 +23,6 @@ from geometry_msgs.msg import Point
 from robot_sim.srv import PlaceMarkers, StepWorld
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Float64
-
-joint_limits_low = np.array([
-    -0.000006,
-    -1.571984,
-    -1.529065,
-    -0.785398,
-    -3.053450,
-], dtype=config.Common.DataType.Numpy)
-joint_limits_high = np.array([
-    3.053448,
-    1.571984,
-    1.571069,
-    0.785398,
-    3.053439,
-], dtype=config.Common.DataType.Numpy)
 
 class SpinThread (threading.Thread):
     def run(self):
@@ -76,15 +63,38 @@ class ROS(Simulator):
         if ROS.__client_activated:
             raise Exception()
         ROS.__client_activated = True
-        self.__desired = None
+
+        self.robot = Robot1()
         self.workspace = Workspace()
+        self.obstacles = [
+            geo.Box(np.array([0, 0, 0.1]), np.array([1, 1, 0.2])),
+            geo.Box(np.array([0.701, 0.701, 2]), np.array([0.302, 0.302, 4])),
+            geo.Box(np.array([0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
+            geo.Box(np.array([-0.701, 0.701, 2]), np.array([0.302, 0.302, 4])),
+            geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
+        ]
+        self.__desired = None
 
         # Load configs
-        workspace = self.configs.get(config.Environment.ROS.Workspace_)
-        workspace_append = self.configs.get(config.Environment.ROS.WorkspaceAppend_)
-        workspace_max_link = self.configs.get(config.Environment.ROS.WorkspaceMaxLinkLength_)
-        workspace_max_retry = self.configs.get(config.Environment.ROS.WorkspaceMaxRetry_)
-        workspace_min_d = self.configs.get(config.Environment.ROS.WorkspaceMinNodeDistance_)
+        self.action_amp = self.configs.get(config.Environment.ROS.ActionAmp_)
+        workspace_name = self.configs.get(config.Environment.ROS.Workspace_)
+        workspace_max_d = self.configs.get(config.Environment.ROS.WorkspaceMaxD_)
+        workspace_min_r = self.configs.get(config.Environment.ROS.WorkspaceMinR_)
+
+        # Load/Make workspace.
+        if not self.workspace.load(workspace_name):
+            joint_low = self.robot.joint_limits[0]
+            joint_high = self.robot.joint_limits[1]
+            joint_positions = [
+                [p for p in np.arange(joint_low[0], joint_high[0], 0.1)],
+                [p for p in np.arange(joint_low[1], joint_high[1], 0.1)],
+                [p for p in np.arange(joint_low[2], joint_high[2], 0.1)],
+                [0],
+                [-0.1, 0, 0.1],
+            ]
+            self.workspace.make(self.robot, joint_positions, workspace_max_d,
+                workspace_min_r, objs=self.obstacles)
+            self.workspace.save(workspace_name)
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -121,14 +131,6 @@ class ROS(Simulator):
             if not self.state() is None:
                 break
 
-        # Load/generate workspace.
-        if not self.workspace.load(workspace) or workspace_append:
-            def gen_func():
-                self.__random_state()
-                return self.state().achieved
-            self.workspace.fill(gen_func, workspace_min_d, workspace_max_link, workspace_max_retry, append=True)
-            self.workspace.save(workspace)
-
     def __register_service(self, name: str, type: Type) -> None:
         if name in self.__services:
             raise Exception('Duplicated services')
@@ -164,7 +166,7 @@ class ROS(Simulator):
         self._state = None
 
     def __step(self, joint_position: np.ndarray) -> None:
-        joint_position = np.clip(joint_position, joint_limits_low, joint_limits_high)
+        joint_position = self.robot.clip(joint_position)
         self.__get_publisher(TopicLibrary.joint0_com).publish(joint_position[0])
         self.__get_publisher(TopicLibrary.joint1_com).publish(joint_position[1])
         self.__get_publisher(TopicLibrary.joint2_com).publish(joint_position[2])
@@ -179,7 +181,7 @@ class ROS(Simulator):
             if state.collision:
                 break
             err = np.sum(np.abs(self.state().joint_position - joint_position))
-            if err <= 1e-5:
+            if err <= 1e-2:
                 break
             i += 1
             if i > 30:
@@ -187,7 +189,7 @@ class ROS(Simulator):
 
     def __random_state(self) -> None:
         while True:
-            joint_pos = np.random.uniform(joint_limits_low, joint_limits_high)
+            joint_pos = np.random.uniform(self.robot.joint_limits[0], self.robot.joint_limits[1])
             self.__step(joint_pos)
             state = self.state()
             if not state.collision:
@@ -241,9 +243,9 @@ class ROS(Simulator):
         self.__random_state()
 
     def step(self, action: np.ndarray) -> GameState:
-        action_amp = self.configs.get(config.Environment.ROS.ActionAmp_)
+        action.clip(-1, 1)
         last_position = self.state().joint_position
-        this_position = last_position + action * action_amp
+        this_position = last_position + action * self.action_amp
         self.__step(this_position)
         state = self.state()
 

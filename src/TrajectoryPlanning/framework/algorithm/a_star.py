@@ -1,77 +1,72 @@
 import numpy as np
 import utils.math
-from copy import copy
 from framework.planner import Planner
 from framework.workspace import Workspace
 from framework.workspace import Node as WorkspaceNode
+from sortedcontainers import SortedKeyList
 
 class Node:
-    def __init__(self, node: WorkspaceNode, finish: np.ndarray, base=None) -> None:
-        self.node = node
-        self.priority = utils.math.distance(finish, self.node.pos)
-        if base is None:
-            self.cost = 0
-            self.path = [self.node.pos]
-        else:
-            self.cost = np.inf
-            self.compare_and_rebase(base)
-
-    def compare_and_rebase(self, base) -> None:
-        new_cost = base.cost + utils.math.distance(base.node.pos, self.node.pos)
-        if self.cost > new_cost:
-            self.cost = new_cost
-            self.path = copy(base.path)
-            self.path.append(base.node.pos)
-
-def a_star(workspace: Workspace, start: np.ndarray, finish: np.ndarray) -> list[np.ndarray]:
-    start_wsnode = workspace.nearest_node(start)
-    finish_wsnode = workspace.nearest_node(finish)
-
-    if len(start_wsnode.neighbours) == 0 or len(finish_wsnode.neighbours) == 0:
-        return None
-
-    start_node = Node(start_wsnode, finish_wsnode.pos)
-    next_nodes = {start_node.node: start_node}
-    removed_nodes = {}
-
-    while len(next_nodes) > 0:
-        # Find a node to remove.
-        opt_node = None
-        min_cost = np.inf
-        for node in next_nodes.values():
-            cost = node.cost + node.priority
-            if cost < min_cost:
-                min_cost = cost
-                opt_node = node
+    def __init__(self, wsnode: WorkspaceNode) -> None:
+        self.wsnode = wsnode
+        self.from_start = 0
+        self.to_finish = 0
+        self.parent = None
         
-        # Remove node.
-        del next_nodes[opt_node.node]
-        removed_nodes[opt_node.node] = None
+    @property
+    def priority(self) -> float:
+        return self.from_start + self.to_finish
 
-        # Add neighbours.
-        for wsnode in opt_node.node.neighbours:
-            if wsnode in removed_nodes:
-                continue
-            if wsnode in next_nodes:
-                next_nodes[wsnode].compare_and_rebase(opt_node)
+def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndarray) -> list[np.ndarray] | None:
+    start_wsnode = workspace.nearest_joint_position(joint_position)
+    finish_wsnodes = set(workspace.find_positions(target_pos, 0.05))
+    if start_wsnode is None or len(finish_wsnodes) == 0: return None
+    start_node = Node(start_wsnode)
+    next_node_ordered = SortedKeyList([start_node], key=lambda n: n.priority)
+    next_node_map = {start_node.wsnode: start_node}
+
+    while len(next_node_ordered) > 0:
+        # Get the least cost node to remove.
+        opt_node: Node = next_node_ordered.pop(0)
+        del next_node_map[opt_node.wsnode]
+
+        # Merge neighbours.
+        for wsnode in opt_node.wsnode.neighbours:
+            neighbour = next_node_map.get(wsnode)
+            from_start = opt_node.from_start + utils.math.distance(
+                opt_node.wsnode.joint_position, wsnode.joint_position)
+
+            if neighbour is None:
+                if wsnode in finish_wsnodes:
+                    # Solution found.
+                    path = [wsnode.joint_position]
+                    parent = opt_node
+                    while not parent is None:
+                        path.insert(0, parent.wsnode.joint_position)
+                        parent = parent.parent
+                    return path
+                neighbour = Node(wsnode)
+                neighbour.to_finish = min([utils.math.distance(
+                    n.joint_position, wsnode.joint_position) for n in finish_wsnodes])
+                next_node_map[wsnode] = neighbour
             else:
-                new_node = Node(wsnode, finish_wsnode.pos, base=opt_node)
-                next_nodes[wsnode] = new_node
-                if wsnode is finish_wsnode:
-                    return new_node.path
-
+                if from_start >= neighbour.from_start:
+                    continue
+                next_node_ordered.remove(neighbour)
+            neighbour.from_start = from_start
+            neighbour.parent = opt_node
+            next_node_ordered.add(neighbour)
     return None
 
-class AStarPlanner (Planner):
-    def __init__(self, sim, iks) -> None:
-        super().__init__(sim, iks)
+class AStarPlanner(Planner):
+    def __init__(self, sim) -> None:
+        super().__init__(sim)
     
     def reach(self, pos: np.ndarray) -> bool:
         state = self.sim.state()
-        path = a_star(self.sim.workspace, state.achieved, pos)
+        path = a_star(self.sim.workspace, state.joint_position, pos)
         if path is None:
             return False
-        path.append(pos)
-        for pt in path:
-            self._reach(pt)
+        for joint_position in path:
+            if not self._reach(joint_position):
+                return False
         return True

@@ -11,21 +11,21 @@
   <joint name="joint_table" type="fixed">
     <parent link="world"/>
     <child link="table"/>
-    <origin xyz="0 0 0.5" rpy="0 0 0"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
   </joint>
 
   <link name="table">
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-	      <box size="1 1 1" />
+	      <box size="1 1 0.2" />
       </geometry>
     </collision>
 
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-	      <box size="1 1 1" />
+	      <box size="1 1 0.2" />
       </geometry>
       <material name="white"/>
     </visual>
@@ -48,18 +48,19 @@
   <joint name="obj1_joint" type="fixed">
     <parent link="world"/>
     <child link="obj1"/>
+    <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
   </joint>
 
   <link name="obj1">
     <collision>
-      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
@@ -67,7 +68,7 @@
     </visual>
 
     <inertial>
-      <origin xyz="0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1.0"/>
       <inertia
         ixx="1.0" ixy="0.0" ixz="0.0"
@@ -84,18 +85,19 @@
   <joint name="obj2_joint" type="fixed">
     <parent link="world"/>
     <child link="obj2"/>
+    <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
   </joint>
 
   <link name="obj2">
     <collision>
-      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
@@ -103,7 +105,7 @@
     </visual>
 
     <inertial>
-      <origin xyz="0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1.0"/>
       <inertia
         ixx="1.0" ixy="0.0" ixz="0.0"
@@ -120,18 +122,19 @@
   <joint name="obj3_joint" type="fixed">
     <parent link="world"/>
     <child link="obj3"/>
+    <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
   </joint>
 
   <link name="obj3">
     <collision>
-      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
@@ -139,7 +142,7 @@
     </visual>
 
     <inertial>
-      <origin xyz="-0.701 0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1.0"/>
       <inertia
         ixx="1.0" ixy="0.0" ixz="0.0"
@@ -156,18 +159,19 @@
   <joint name="obj4_joint" type="fixed">
     <parent link="world"/>
     <child link="obj4"/>
+    <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
   </joint>
 
   <link name="obj4">
     <collision>
-      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
     </collision>
 
     <visual>
-      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
 	      <box size="0.302 0.302 4"/>
       </geometry>
@@ -175,7 +179,7 @@
     </visual>
 
     <inertial>
-      <origin xyz="-0.701 -0.701 2" rpy="0 0 0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <mass value="1.0"/>
       <inertia
         ixx="1.0" ixy="0.0" ixz="0.0"

@@ -74,7 +74,7 @@ def main():
                     noise_amount = 0
                 noise_amount = max(noise_amount, 0)
                 action += normal_noise.sample() * noise_amount
-            action = np.clip(action, -1, 1)
+            action.clip(-1, 1)
             next_state = sim.step(action)
 
             # Calculate reward and add to replay buffer.

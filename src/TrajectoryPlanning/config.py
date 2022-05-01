@@ -29,11 +29,9 @@ class Environment:
         ActionAmp_ = ('Environment/ROS/ActionAmp', 0.1)
         MaxIterations_ = ('Environment/ROS/MaxIterations', 150)
         StepIterations_ = ('Environment/ROS/StepIterations', 50) # make sure corresponding to sensor frequency
-        Workspace_ = ('Environment/ROS/Workspace', 'g50')
-        WorkspaceAppend_ = ('Environment/ROS/WorkspaceAppend', False)
-        WorkspaceMaxLinkLength_ = ('Environment/ROS/WorkspaceMaxLinkLength', 0.08)
-        WorkspaceMaxRetry_ = ('Environment/ROS/WorkspaceMaxRetry', 20)
-        WorkspaceMinNodeDistance_ = ('Environment/ROS/WorkspaceNodeDistance', 0.04)
+        Workspace_ = ('Environment/ROS/Workspace', 'd6')
+        WorkspaceMaxD_ = ('Environment/ROS/WorkspaceMaxD', 0.05)
+        WorkspaceMinR_ = ('Environment/ROS/WorkspaceMinR', 0.05)
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
@@ -97,6 +95,12 @@ class Evaluator:
 
 class Workspace:
     SaveDir = 'workspace'
+
+class ArtificialPotentialField:
+    Eta_ = ('ArtificialPotentialField/Eta', 1.0)
+    Samples_ = ('ArtificialPotentialField/Samples', 1000)
+    Step_ = ('ArtificialPotentialField/Step', 0.1)
+    Zeta_ = ('ArtificialPotentialField/Zeta', 5.0)
 
 # Post-initialization
 __output_dir = todir('output')
