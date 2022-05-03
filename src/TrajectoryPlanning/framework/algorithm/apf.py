@@ -5,16 +5,12 @@ from framework.planner import Planner
 from framework.configuration import global_configs as configs
 
 class ArtificialPotentialFieldPlanner(Planner):
-    def __init__(self, sim, dim: int) -> None:
+    def __init__(self, sim) -> None:
         super().__init__(sim)
-        assert dim > 0
         self.eta = configs.get(config.ArtificialPotentialField.Eta_)
         self.samples = configs.get(config.ArtificialPotentialField.Samples_)
         self.step = configs.get(config.ArtificialPotentialField.Step_)
         self.zeta = configs.get(config.ArtificialPotentialField.Zeta_)
-        self.dim = dim
-        self.actions = np.array([utils.math.random_point_on_hypersphere(dim) for _ in range(self.samples)])
-        self.actions *= self.step
     
     def reach(self, pos: np.ndarray) -> bool:
         while True:
@@ -38,9 +34,11 @@ class ArtificialPotentialFieldPlanner(Planner):
         return potential
 
     def __next(self, joint_position: np.ndarray, target_pos: np.ndarray) -> np.ndarray:
+        dim = joint_position.shape[0]
+        actions = np.array([utils.math.random_point_on_hypersphere(dim) for _ in range(self.samples)]) * self.step
         min_potential = self.__potential(joint_position, target_pos)
         ans = joint_position
-        for action in self.actions:
+        for action in actions:
             new_joint_position = self.sim.robot.clip(joint_position + action)
             potential = self.__potential(new_joint_position, target_pos)
             if potential < min_potential:

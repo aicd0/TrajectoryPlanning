@@ -8,23 +8,18 @@ from framework.configuration import global_configs as configs
 from framework.evaluator import Evaluator
 
 def main():
-    # Load from configs.
-    algorithm = configs.get(config.Agent.Algorithm_)
-
     # Initialize environment.
     sim, game = create_environment('gazebo')
     state = sim.reset()
     dim_action = sim.dim_action()
     dim_state = state.dim_state()
 
-    # Initialize agent.
-    agent = create_agent(algorithm, dim_state, dim_action)
-
-    # Load evaluator.
+    # Load agent.
+    agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='joint_solver')
     evaluator = Evaluator(agent)
     evaluator.load(enable_learning=False)
 
-    # Logging.
+    # Progress.
     step_rewards = []
     epoch_rewards = []
 

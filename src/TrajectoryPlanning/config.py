@@ -5,7 +5,7 @@ from utils.string_utils import to_folder_path as todir
 class Common:
     ProjectDir = 'main'
     ConfigDir = 'configs'
-    Target_ = ('Common/Target', 'train')
+    Target_ = ('Common/Target', 'joint_solver_train')
 
     class DataType:
         Numpy = np.float32
@@ -22,7 +22,7 @@ class Environment:
         StepIterations_ = ('Environment/Gazebo/StepIterations', 50) # make sure corresponding to sensor frequency
         Workspace_ = ('Environment/Gazebo/Workspace', 'd6')
         WorkspaceMaxD_ = ('Environment/Gazebo/WorkspaceMaxD', 0.05)
-        WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.05)
+        WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.025)
 
     class Gym:
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows
@@ -38,12 +38,10 @@ class Model:
 
 class Agent:
     SaveDir = 'agents'
-    Algorithm_ = ('Agent/Algorithm', 'sac')
     BatchSize_ = ('Agent/BatchSize', 64)
     Gamma_ = ('Agent/Gamma', 0.99)
     LRActor_ = ('Agent/LRActor', 0.0001)
     LRCritic_ = ('Agent/LRCritic', 0.001)
-    ModelGroup_ = ('Agent/ModelGroup', 'sac/l3')
     ReplayBuffer_ = ('Agent/ReplayBuffer', 400000)
     Tau_ = ('Agent/Tau', 0.001)
     Warmup_ = ('Agent/Warmup', 1000)
@@ -78,7 +76,7 @@ class Training:
 class Testing:
     DetachAgent = False
     NoiseEnabled = False
-    MaxEpoches = 100
+    MaxEpoches = 10
     MaxIterations = 10000
 
 class Evaluator:
@@ -102,6 +100,9 @@ class ArtificialPotentialField:
     Step_ = ('ArtificialPotentialField/Step', 0.1)
     Zeta_ = ('ArtificialPotentialField/Zeta', 5.0)
 
+class Export:
+    SaveDir = 'export'
+
 # Post-initialization
 __output_dir = todir('output')
 Common.ProjectDir = todir(__output_dir + Common.ProjectDir)
@@ -112,3 +113,4 @@ Agent.SaveDir = todir(Common.ProjectDir + Agent.SaveDir)
 Evaluator.SaveDir = todir(Common.ProjectDir + Evaluator.SaveDir)
 Evaluator.FigureDir = todir(Common.ProjectDir + Evaluator.FigureDir)
 Workspace.SaveDir = todir(__output_dir + Workspace.SaveDir)
+Export.SaveDir = todir(__output_dir + Export.SaveDir)

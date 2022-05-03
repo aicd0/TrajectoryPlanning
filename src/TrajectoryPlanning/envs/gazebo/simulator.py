@@ -68,10 +68,10 @@ class Gazebo(Simulator):
         self.workspace = Workspace()
         self.obstacles = [
             geo.Box(np.array([0, 0, 0.1]), np.array([1, 1, 0.2])),
-            geo.Box(np.array([0.701, 0.701, 2]), np.array([0.302, 0.302, 4])),
-            geo.Box(np.array([0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
-            geo.Box(np.array([-0.701, 0.701, 2]), np.array([0.302, 0.302, 4])),
-            geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
+            geo.Box(np.array([0.701, 0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([-0.701, 0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
         ]
         self.__desired = None
 
@@ -224,6 +224,13 @@ class Gazebo(Simulator):
         state.achieved = np.array([pos_achieved.x, pos_achieved.y, pos_achieved.z])
         state.desired = self.__desired
         return state
+
+    def place_marker(self, marker: str, pos: np.ndarray) -> None:
+        pt = Point()
+        pt.x = pos[0]
+        pt.y = pos[1]
+        pt.z = pos[2]
+        self.__call_service(ServiceLibrary.place_markers, marker, pt)
         
     def close(self) -> None:
         self.__spin_thread.terminate()
@@ -232,28 +239,20 @@ class Gazebo(Simulator):
     def _reset(self) -> None:
         # Set target point randomly.
         self.__desired = self.workspace.sample()
+        self.place_marker('marker_red', self.__desired)
 
-        # Notify Gazebo to update target point.
-        pt = Point()
-        pt.x = self.__desired[0]
-        pt.y = self.__desired[1]
-        pt.z = self.__desired[2]
-        self.__call_service(ServiceLibrary.place_markers, 'marker_red', pt)
-
+        # Randomly reset robot state.
         self.__random_state()
 
-    def step(self, action: np.ndarray) -> GazeboState:
-        action.clip(-1, 1)
+    def _step(self, action: np.ndarray) -> None:
+        action = action.clip(-1, 1)
         last_position = self.state().joint_position
         this_position = last_position + action * self.action_amp
         self.__step(this_position)
         state = self.state()
-
         if state.collision:
             self.__step(last_position)
-            state = self.state()
-            state.collision = True
-        return state
+            self.state().collision = True
 
     def plot_reset(self) -> None:
         pass

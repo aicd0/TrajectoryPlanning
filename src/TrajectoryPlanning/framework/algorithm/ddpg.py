@@ -15,8 +15,8 @@ from torch import optim
 checkpoint_file = 'checkpoint.pt'
 
 class DDPG(Agent):
-    def __init__(self, dim_state: int, dim_action: int, name: str = None) -> None:
-        super().__init__(dim_state, dim_action, name)
+    def __init__(self, *arg, **kwarg) -> None:
+        super().__init__(*arg, **kwarg)
 
         # Load configs.
         self.batchsize = self.configs.get(config.Agent.BatchSize_)
@@ -26,10 +26,10 @@ class DDPG(Agent):
         self.tau = self.configs.get(config.Agent.Tau_)
 
         # Initialize models.
-        self.critic = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.actor = models.create(self.model_group + '/actor', dim_state, dim_action)
-        self.critic_targ = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.actor_targ = models.create(self.model_group + '/actor', dim_state, dim_action)
+        self.critic = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.actor = models.create(self.model_group + '/actor', self.dim_state, self.dim_action)
+        self.critic_targ = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.actor_targ = models.create(self.model_group + '/actor', self.dim_state, self.dim_action)
 
         utils.math.hard_update(self.critic_targ, self.critic) # make sure target is with the same weight.
         utils.math.hard_update(self.actor_targ, self.actor)

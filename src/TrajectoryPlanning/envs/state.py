@@ -1,10 +1,7 @@
 import numpy as np
-from abc import ABCMeta, abstractmethod
-from typing import Any
+from abc import abstractmethod
 
 class State:
-    __metaclass__ = ABCMeta
-
     def __init__(self):
         self.__as_input = None
 

@@ -1,3 +1,4 @@
+from copy import deepcopy
 import numpy as np
 import utils.name
 from .state import State
@@ -10,7 +11,13 @@ class Simulator:
     def __init__(self, name: str | None):
         self.name = Simulator.__names.get(self.__class__.__name__, name)
         self.configs = Configuration(self.name)
+        self.record = False
+        self.records: list[State] = []
         self._state = None
+        
+    @abstractmethod
+    def close(self) -> None:
+        raise NotImplementedError()
 
     @abstractmethod
     def _get_state(self) -> State:
@@ -20,10 +27,6 @@ class Simulator:
         if self._state is None:
             self._state = self._get_state()
         return self._state
-        
-    @abstractmethod
-    def close(self) -> None:
-        raise NotImplementedError()
 
     @abstractmethod
     def _reset(self) -> None:
@@ -34,8 +37,15 @@ class Simulator:
         return self.state()
 
     @abstractmethod
-    def step(self, action: np.ndarray) -> State:
+    def _step(self, action: np.ndarray) -> None:
         raise NotImplementedError()
+
+    def step(self, action: np.ndarray) -> State:
+        self._step(action)
+        state = self.state()
+        if self.record:
+            self.records.append(deepcopy(state))
+        return state
     
     @abstractmethod
     def plot_reset(self) -> None:

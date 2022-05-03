@@ -16,8 +16,8 @@ from torch.optim import Adam
 checkpoint_file = 'checkpoint.pt'
 
 class SAC(Agent):
-    def __init__(self, dim_state: int, dim_action: int, name: str = None) -> None:
-        super().__init__(dim_state, dim_action, name)
+    def __init__(self, *arg, **kwarg) -> None:
+        super().__init__(*arg, **kwarg)
 
         # Load configs.
         self.auto_entropy_tuning = self.configs.get(config.Agent.SAC.AutoEntropyTuning_)
@@ -29,11 +29,11 @@ class SAC(Agent):
         self.tau = self.configs.get(config.Agent.Tau_)
 
         # Initialize models.
-        self.q1 = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.q2 = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.q1_targ = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.q2_targ = models.create(self.model_group + '/critic', dim_state, dim_action)
-        self.actor = models.create(self.model_group + '/actor', dim_state, dim_action)
+        self.q1 = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.q2 = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.q1_targ = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.q2_targ = models.create(self.model_group + '/critic', self.dim_state, self.dim_action)
+        self.actor = models.create(self.model_group + '/actor', self.dim_state, self.dim_action)
         self.log_alpha = torch.zeros(1, requires_grad=True)
 
         utils.math.hard_update(self.q1_targ, self.q1) # make sure target is with the same weight.
@@ -45,7 +45,7 @@ class SAC(Agent):
         self.alpha_optim = Adam([self.log_alpha], lr=self.lr_alpha)
 
         # Auto entropy tuning.
-        self.target_entropy = -float(dim_action)
+        self.target_entropy = -float(self.dim_action)
         self.alpha = self.log_alpha.exp()
 
         # Initialize losses.

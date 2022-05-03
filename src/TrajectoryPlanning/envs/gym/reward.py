@@ -11,15 +11,15 @@ class GymReward(Reward):
 
     def _update(self, action: np.ndarray, state: GymState) -> None:
         reward = self.__state2reward(state)
-        return reward, state.done
+        return reward, state.raw_done
 
     def __state2reward(self, state: GymState):
         if self.env_name == 'CartPole-v0':
-            return -1 if state.done else 1
+            return -1 if state.raw_done else 1
         if self.env_name == 'CartPole-v1':
-            return -1 if state.done else 1
+            return -1 if state.raw_done else 1
         if self.env_name == 'FetchReach-v1':
-            if state.reward_raw < 0:
+            if state.raw_reward < 0:
                 return -np.linalg.norm(state.desired - state.achieved) * 10.
             return 0
-        return state.reward_raw
+        return state.raw_reward

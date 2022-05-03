@@ -3,14 +3,18 @@ from framework.configuration import global_configs as configs
 
 __target = configs.get(config.Common.Target_)
 
-if __target == 'train':
-    from . import train as target
-elif __target == 'test':
-    from . import test as target
-elif __target == 'a_star':
-    from . import a_star as target
-elif __target == 'apf':
-    from . import apf as target
+if __target == 'rl_train':
+    from . import rl_train as target
+elif __target == 'rl_test':
+    from . import rl_test as target
+elif __target == 'a_star_static':
+    from . import a_star_static as target
+elif __target == 'a_star_rect':
+    from . import a_star_rect as target
+elif __target == 'apf_static':
+    from . import apf_static as target
+elif __target == 'apf_rect':
+    from . import apf_rect as target
 elif __target == 'debug':
     from . import debug as target
 else:

@@ -7,6 +7,7 @@
   <!-- Base link -->
   <link name="world"/>
 
+  <!-- Red -->
   <joint name="marker_red_joint" type="fixed">
     <parent link="world"/>
     <child link="marker_red"/>
@@ -33,6 +34,35 @@
 
   <gazebo reference="marker_red">
     <material>Gazebo/Red</material>
+  </gazebo>
+
+  <!-- Green -->
+  <joint name="marker_green_joint" type="fixed">
+    <parent link="world"/>
+    <child link="marker_green"/>
+  </joint>
+
+  <link name="marker_green">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <sphere radius="${marker_point_radius}" />
+      </geometry>
+      <material name="green"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="marker_green">
+    <material>Gazebo/Green</material>
   </gazebo>
 
 </robot>

@@ -16,13 +16,13 @@ replay_buffer_file = 'replay_buffer.npz'
 class Agent:
     __names = utils.name.Name('agent')
 
-    def __init__(self, dim_state: int, dim_action: int, name) -> None:
+    def __init__(self, model_group: str, dim_state: int, dim_action: int, name: str | None=None) -> None:
         self.name = Agent.__names.get(self.__class__.__name__, name)
         self.configs = Configuration(self.name)
         self.save_dir = utils.string_utils.to_folder_path(config.Agent.SaveDir + self.name)
+        self.model_group = model_group
         self.dim_state = dim_state
         self.dim_action = dim_action
-        self.model_group = self.configs.get(config.Agent.ModelGroup_)
 
         # Initialize the replay buffer.
         self.replay_buffer = ReplayBuffer(self.configs)

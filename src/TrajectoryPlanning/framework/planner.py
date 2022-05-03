@@ -13,7 +13,7 @@ class Planner:
             state = self.sim.state()
             action = joint_position - state.joint_position
             if np.sum(np.abs(action)) < 1e-5:
-                return False
+                return True
             new_state = self.sim.step(action / self.sim.action_amp)
             if self.plot:
                 self.sim.plot_step()

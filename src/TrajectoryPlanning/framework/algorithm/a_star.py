@@ -18,9 +18,12 @@ class Node:
 
 def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndarray) -> list[np.ndarray] | None:
     start_wsnode = workspace.nearest_joint_position(joint_position)
-    finish_wsnodes = set(workspace.find_positions(target_pos, 0.05))
-    if start_wsnode is None or len(finish_wsnodes) == 0: return None
     start_node = Node(start_wsnode)
+    
+    finish_wsnodes = workspace.nearest_positions(target_pos)
+    if len(finish_wsnodes) <= 0:
+        return None
+        
     next_node_ordered = SortedKeyList([start_node], key=lambda n: n.priority)
     next_node_map = {start_node.wsnode: start_node}
 
