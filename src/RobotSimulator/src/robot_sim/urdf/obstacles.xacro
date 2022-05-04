@@ -18,14 +18,14 @@
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-	      <box size="1 1 0.2" />
+	      <box size="1 1 0.19" />
       </geometry>
     </collision>
 
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-	      <box size="1 1 0.2" />
+	      <box size="1 1 0.19" />
       </geometry>
       <material name="white"/>
     </visual>

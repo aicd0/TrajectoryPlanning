@@ -23,7 +23,7 @@ class ArtificialPotentialFieldPlanner(Planner):
             if np.max(np.abs(joint_pos - state.joint_position)) < 1e-5:
                 success = False
                 break
-            if not self._direct_reach(joint_pos):
+            if not self._simple_reach(joint_pos):
                 success = False
                 break
         return success
@@ -31,7 +31,7 @@ class ArtificialPotentialFieldPlanner(Planner):
     def __potential(self, joint_position: np.ndarray, target_pos: np.ndarray) -> float:
         points = self.sim.robot.collision_points(joint_position)
         d = utils.math.distance(points[-1], target_pos)
-        potential = self.zeta * (d - 1 / d)
+        potential = self.zeta * (d - 1 / (d + 1e-5))
         for pos in points:
             for obstacle in self.sim.obstacles:
                 d = obstacle.distance(pos)

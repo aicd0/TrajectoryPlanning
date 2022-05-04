@@ -19,17 +19,17 @@ class Node:
 def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndarray) -> list[np.ndarray] | None:
     start_wsnode = workspace.nearest_joint_position(joint_position)
     start_node = Node(start_wsnode)
-    
     finish_wsnodes = workspace.nearest_positions(target_pos)
     if len(finish_wsnodes) <= 0:
         return None
-        
-    next_node_ordered = SortedKeyList([start_node], key=lambda n: n.priority)
+    if start_wsnode in finish_wsnodes:
+        return [start_node.wsnode.joint_position]
+    next_node_sorted = SortedKeyList([start_node], key=lambda n: n.priority)
     next_node_map = {start_node.wsnode: start_node}
 
-    while len(next_node_ordered) > 0:
+    while len(next_node_sorted) > 0:
         # Get the least cost node to remove.
-        opt_node: Node = next_node_ordered.pop(0)
+        opt_node: Node = next_node_sorted.pop(0)
         del next_node_map[opt_node.wsnode]
 
         # Merge neighbours.
@@ -54,10 +54,10 @@ def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndar
             else:
                 if from_start >= neighbour.from_start:
                     continue
-                next_node_ordered.remove(neighbour)
+                next_node_sorted.remove(neighbour)
             neighbour.from_start = from_start
             neighbour.parent = opt_node
-            next_node_ordered.add(neighbour)
+            next_node_sorted.add(neighbour)
     return None
 
 class AStarPlanner(Planner):
@@ -70,6 +70,6 @@ class AStarPlanner(Planner):
         if path is None:
             return False
         for joint_position in path:
-            if not self._direct_reach(joint_position):
+            if not self._simple_reach(joint_position):
                 return False
         return True
