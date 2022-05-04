@@ -68,10 +68,10 @@ class Gazebo(Simulator):
         self.robot = Robot1()
         self.workspace = Workspace()
         self.obstacles = [
-            geo.Box(np.array([0, 0, 0.1]), np.array([1, 1, 0.2])),
-            geo.Box(np.array([0.701, 0.701, 2]), np.array([0.4, 0.4, 4])),
-            geo.Box(np.array([0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
-            geo.Box(np.array([-0.701, 0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([0, 0, 0.1]), np.array([1.1, 1.1, 0.3])),
+            geo.Box(np.array([ 0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
+            geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
             geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
         ]
         self.__desired = None
