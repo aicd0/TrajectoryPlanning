@@ -1,9 +1,9 @@
 import config
 from .dep.rl import ReinforcementLearningPlanner
-from envs import create_environment
+from envs import create_simulator
 
 def main():
-    sim, _ = create_environment('gazebo')
+    sim = create_simulator('gazebo')
     planner = ReinforcementLearningPlanner(sim, plot=True)
     
     for _ in range(config.Testing.MaxEpoches):

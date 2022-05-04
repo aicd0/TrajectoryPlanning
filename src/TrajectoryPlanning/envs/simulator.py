@@ -1,6 +1,7 @@
 from copy import deepcopy
 import numpy as np
 import utils.name
+from .reward import Reward
 from .state import State
 from abc import abstractmethod
 from framework.configuration import Configuration
@@ -57,4 +58,8 @@ class Simulator:
 
     @abstractmethod
     def dim_action(self) -> int:
+        raise NotImplementedError()
+
+    @abstractmethod
+    def reward(self) -> Reward:
         raise NotImplementedError()

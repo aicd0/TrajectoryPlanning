@@ -1,7 +1,6 @@
 import numpy as np
 from .state import MatlabState
 from envs.reward import Reward
-from typing import Tuple
 
 class MatlabReward(Reward):
     def __init__(self) -> None:

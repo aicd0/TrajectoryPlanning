@@ -1,10 +1,10 @@
 import numpy as np
 import utils.print
-from envs import create_environment
+from envs import create_simulator
 from framework.robot import Robot1
 
 def main():
-    sim, _ = create_environment('gazebo')
+    sim = create_simulator('gazebo')
     robot = Robot1()
 
     while True:

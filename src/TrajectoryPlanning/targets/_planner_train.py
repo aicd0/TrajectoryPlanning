@@ -5,7 +5,7 @@ import time
 import utils.print
 import utils.string_utils
 from copy import copy
-from envs import create_environment
+from envs import create_simulator
 from envs.gazebo.state import GazeboState
 from framework.agent import create_agent
 from framework.configuration import global_configs as configs
@@ -46,7 +46,8 @@ def main():
     warmup_steps = configs.get(config.Agent.Warmup_)
 
     # Initialize environment.
-    sim, game = create_environment('gazebo')
+    sim = create_simulator('gazebo')
+    game = sim.reward()
 
     state = sim.reset()
     dim_action = sim.dim_action()

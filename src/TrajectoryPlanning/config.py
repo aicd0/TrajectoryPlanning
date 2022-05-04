@@ -5,7 +5,7 @@ from utils.string_utils import to_folder_path as todir
 class Common:
     ProjectDir = 'main'
     ConfigDir = 'configs'
-    Target_ = ('Common/Target', 'joint_solver_train')
+    Target_ = ('Common/Target', 'rl_train')
 
     class DataType:
         Numpy = np.float32

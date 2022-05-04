@@ -2,7 +2,7 @@ import numpy as np
 import utils.export
 import utils.print
 from .dep.rl import ReinforcementLearningPlanner
-from envs import create_environment
+from envs import create_simulator
 
 track = [
     np.array([-0.4, -0.2, 0.3]),
@@ -13,7 +13,7 @@ track = [
 ]
 
 def main():
-    sim, _ = create_environment('gazebo')
+    sim = create_simulator('gazebo')
     planner = ReinforcementLearningPlanner(sim, plot=True)
 
     sim.reset()

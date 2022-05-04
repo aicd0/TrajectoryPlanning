@@ -3,7 +3,7 @@ import framework.algorithm.her
 import time
 import utils.print
 import utils.string_utils
-from envs import create_environment
+from envs import create_simulator
 from framework.agent import create_agent
 from framework.configuration import global_configs as configs
 from framework.evaluator import Evaluator
@@ -24,7 +24,8 @@ def main():
     warmup_steps = configs.get(config.Agent.Warmup_)
 
     # Initialize environment.
-    sim, game = create_environment('gazebo')
+    sim = create_simulator('gazebo')
+    game = sim.reward()
     state = sim.reset()
     dim_action = sim.dim_action()
     dim_state = state.dim_state()

@@ -1,7 +1,7 @@
 import numpy as np
 import utils.export
 import utils.print
-from envs import create_environment
+from envs import create_simulator
 from framework.algorithm.a_star import AStarPlanner
     
 track = [
@@ -13,7 +13,7 @@ track = [
 ]
 
 def main():
-    sim, _ = create_environment('gazebo')
+    sim = create_simulator('gazebo')
     planner = AStarPlanner(sim, plot=True)
 
     sim.reset()

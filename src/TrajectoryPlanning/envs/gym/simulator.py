@@ -2,6 +2,7 @@ import config
 import numpy as np
 import os
 import utils.platform
+from .reward import GymReward
 from .state import GymState
 from envs.simulator import Simulator
 from framework.configuration import global_configs as configs
@@ -52,3 +53,6 @@ class Gym(Simulator):
 
     def dim_action(self) -> int:
         return self.__dim_action
+        
+    def reward(self) -> GymReward:
+        return GymReward()

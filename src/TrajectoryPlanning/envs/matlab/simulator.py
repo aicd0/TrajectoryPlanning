@@ -4,6 +4,7 @@ import numpy as np
 import utils.fileio
 import utils.string_utils
 from .engine import Connector
+from .reward import MatlabReward
 from .state import MatlabState
 from envs.simulator import Simulator
 
@@ -79,3 +80,6 @@ class Matlab(Simulator):
         
     def dim_action(self) -> int:
         return self.__dim_action
+
+    def reward(self) -> MatlabReward:
+        return MatlabReward()

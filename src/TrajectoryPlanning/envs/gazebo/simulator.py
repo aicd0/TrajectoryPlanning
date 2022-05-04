@@ -7,6 +7,7 @@ import threading
 import time
 import utils.platform
 import utils.string_utils
+from .reward import GazeboReward
 from .state import GazeboState
 from envs.simulator import Simulator
 from framework.robot import Robot1
@@ -261,3 +262,6 @@ class Gazebo(Simulator):
 
     def dim_action(self) -> int:
         return 5
+        
+    def reward(self) -> GazeboReward:
+        return GazeboReward(self.robot, self.obstacles)

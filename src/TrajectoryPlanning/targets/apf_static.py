@@ -1,9 +1,9 @@
 import config
-from envs import create_environment
+from envs import create_simulator
 from framework.algorithm.apf import ArtificialPotentialFieldPlanner
 
 def main():
-    sim, _ = create_environment('gazebo')
+    sim = create_simulator('gazebo')
     planner = ArtificialPotentialFieldPlanner(sim, plot=True)
     
     for _ in range(config.Testing.MaxEpoches):
