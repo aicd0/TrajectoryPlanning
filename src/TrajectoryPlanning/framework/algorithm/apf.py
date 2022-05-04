@@ -1,33 +1,38 @@
 import config
 import numpy as np
 import utils.math
-from framework.planner import Planner
 from framework.configuration import global_configs as configs
+from framework.planner import Planner
 
 class ArtificialPotentialFieldPlanner(Planner):
-    def __init__(self, sim) -> None:
-        super().__init__(sim)
+    def __init__(self, sim, **kwarg) -> None:
+        super().__init__(sim, **kwarg)
         self.eta = configs.get(config.ArtificialPotentialField.Eta_)
         self.samples = configs.get(config.ArtificialPotentialField.Samples_)
         self.step = configs.get(config.ArtificialPotentialField.Step_)
         self.zeta = configs.get(config.ArtificialPotentialField.Zeta_)
     
-    def reach(self, pos: np.ndarray) -> bool:
+    def _reach(self, pos: np.ndarray) -> bool:
         while True:
             state = self.sim.state()
             d = utils.math.distance(state.achieved, pos)
             if d < 0.05:
+                success = True
                 break
             joint_pos = self.__next(state.joint_position, pos)
-            if not self._reach(joint_pos):
-                return False
-        return True
+            if np.max(np.abs(joint_pos - state.joint_position)) < 1e-5:
+                success = False
+                break
+            if not self._direct_reach(joint_pos):
+                success = False
+                break
+        return success
 
     def __potential(self, joint_position: np.ndarray, target_pos: np.ndarray) -> float:
-        origins = self.sim.robot.origins(joint_position)
-        d = utils.math.distance(origins[-1], target_pos)
+        points = self.sim.robot.collision_points(joint_position)
+        d = utils.math.distance(points[-1], target_pos)
         potential = self.zeta * (d - 1 / d)
-        for pos in origins:
+        for pos in points:
             for obstacle in self.sim.obstacles:
                 d = obstacle.distance(pos)
                 potential += self.eta / (d + 1e-5)

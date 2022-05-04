@@ -61,15 +61,15 @@ def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndar
     return None
 
 class AStarPlanner(Planner):
-    def __init__(self, sim) -> None:
-        super().__init__(sim)
+    def __init__(self, sim, **kwarg) -> None:
+        super().__init__(sim, **kwarg)
     
-    def reach(self, pos: np.ndarray) -> bool:
+    def _reach(self, pos: np.ndarray) -> bool:
         state = self.sim.state()
         path = a_star(self.sim.workspace, state.joint_position, pos)
         if path is None:
             return False
         for joint_position in path:
-            if not self._reach(joint_position):
+            if not self._direct_reach(joint_position):
                 return False
         return True

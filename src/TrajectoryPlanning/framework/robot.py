@@ -24,9 +24,9 @@ class Robot:
     def _dh(x: np.ndarray) -> list:
         raise NotImplementedError()
 
-    def origins(self, joint_pos: np.ndarray) -> list[np.ndarray]:
-        s = np.sin(joint_pos)[:, np.newaxis]
-        c = np.cos(joint_pos)[:, np.newaxis]
+    def origins(self, joint_position: np.ndarray) -> list[np.ndarray]:
+        s = np.sin(joint_position)[:, np.newaxis]
+        c = np.cos(joint_position)[:, np.newaxis]
         rts = self._dh(np.concatenate((s, c), axis=1))
 
         origin = np.zeros(3)
@@ -42,6 +42,10 @@ class Robot:
 
     def clip(self, joint_pos: np.ndarray) -> bool:
         return joint_pos.clip(self.joint_limits[0], self.joint_limits[1])
+
+    @abstractmethod
+    def collision_points(self) -> list[np.ndarray]:
+        raise NotImplementedError()
 
 # User-defined
 class Robot1(Robot):
@@ -68,8 +72,14 @@ class Robot1(Robot):
         zero = [0, 1]
         return [
             Robot._from_dh(      0, zero, 0.3215, x[0]),
-            Robot._from_dh(-0.1405, x[1],  0.408, zero),
-            Robot._from_dh( 0.1215, x[2],  0.376, zero),
-            Robot._from_dh(-0.1025, x[3], 0.1025, x[4]),
+            Robot._from_dh(-0.1405, x[1],      0, zero),
+            Robot._from_dh(      0, zero,  0.408, zero),
+            Robot._from_dh( 0.1215, x[2],      0, zero),
+            Robot._from_dh(      0, zero,  0.376, zero),
+            Robot._from_dh(-0.1025, x[3],      0, zero),
+            Robot._from_dh(      0, zero, 0.1025, x[4]),
             Robot._from_dh( -0.144, zero,      0, zero),
         ]
+
+    def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
+        return self.origins(joint_position)[1:]

@@ -60,12 +60,64 @@ class Workspace:
         for i, node in enumerate(self.nodes):
             node.neighbours = [self.nodes[j] for j in nodes[i].neighbours]
         self.workspace = [self.nodes[i] for i in workspace]
-        self.__setup_workspace()
+        self.__setup()
 
         utils.print.put('Workspace loaded (' + name + ')')
         return True
 
-    def __setup_workspace(self) -> None:
+    def make(self, robot: Robot, joint_positions: float, min_r: float, objs: list[Geometry]=[]) -> None:
+        self.__make_nodes(robot, joint_positions, objs)
+        fragments = self.__fragments()
+        utils.print.put('Workspace fragments: %d (%d%%)' % (fragments, int(fragments / len(self.nodes) * 100)))
+        self.__make_workspace(min_r)
+        self.__setup()
+
+    def sample(self) -> np.ndarray:
+        assert len(self.workspace) > 0
+        center = random.sample(self.workspace, 1)[0].pos
+        error = utils.math.random_point_in_hypersphere(self.dim_position, high=self.r)
+        return center + error
+
+    def nearest_joint_position(self, joint_position: np.ndarray) -> Node:
+        assert len(self.nodes) > 0
+        min_d2 = np.inf
+        for node in self.nodes:
+            d2 = utils.math.distance2(node.joint_position, joint_position)
+            if d2 < min_d2:
+                min_d2 = d2
+                ans = node
+        return ans
+
+    def nearest_positions(self, pos: np.ndarray) -> list[Node]:
+        def _nearest_positions(max_d: float):
+            pool: set[Node] = None
+            for i in range(self.dim_position):
+                subset: set[Node] = set()
+                node_sorted = self.sorted['pos'][i]
+                j = bisect.bisect_right(node_sorted, pos[i] - max_d, key=lambda n: n.pos[i])
+                while j < len(node_sorted) and  node_sorted[j].pos[i] <= pos[i] + max_d:
+                    subset.add(node_sorted[j])
+                    j += 1
+                if pool is None:
+                    pool = subset
+                else:
+                    pool = pool.intersection(subset)
+
+            ans = set()
+            max_d2 = max_d * max_d
+            for node in pool:
+                d2 = utils.math.distance2(pos, node.pos)
+                if d2 < max_d2:
+                    ans.add(node)
+            return ans
+        max_d = 0.05
+        ans = []
+        while len(ans) <= 0:
+            ans = _nearest_positions(max_d)
+            max_d += 0.05
+        return ans
+
+    def __setup(self) -> None:
         for i, node in enumerate(self.nodes):
             node.idx = i
         self.dim_position = self.nodes[0].pos.shape[0]
@@ -75,7 +127,7 @@ class Workspace:
         self.sorted['joint_pos'] = [
             sorted(self.nodes, key=lambda n: n.joint_position[i]) for i in range(self.dim_joint_position)]
 
-    def __make_joint_space(self, robot: Robot, joint_positions: float, max_d: float, objs: list[Geometry]) -> None:
+    def __make_nodes(self, robot: Robot, joint_positions: float, objs: list[Geometry]) -> None:
         state_count = math.prod([len(p) for p in joint_positions])
         assert state_count > 0
         max_depth = len(joint_positions)
@@ -90,8 +142,6 @@ class Workspace:
                 current_idx[depth] = idx
                 if depth >= max_depth - 1:
                     node: Node = partial_joint_space[idx]
-                    # if utils.math.distance(pos, node.pos) > max_d:
-                    #     continue
                     dst.append(node)
                 else:
                     _find_neighbours(dst, partial_joint_space[idx], base_idx, pos, current_idx, depth + 1)
@@ -105,7 +155,7 @@ class Workspace:
         def try_create_node(pool: list[Node], joint_space: list,
                             joint_position: np.ndarray, idx: list[int]) -> Node | None:
             # Check collisions.
-            origins = robot.origins(joint_position)
+            origins = robot.collision_points(joint_position)
             for origin in origins:
                 if origin[2] < 0:
                     return None
@@ -221,56 +271,3 @@ class Workspace:
                             neighbours.append(neighbour)
                 nodes = neighbours
         return fragments
-
-    def make(self, robot: Robot, joint_positions: float, max_d: float,
-             min_r: float, objs: list[Geometry]=[]) -> None:
-        self.__make_joint_space(robot, joint_positions, max_d, objs)
-        fragments = self.__fragments()
-        utils.print.put('Workspace fragments: %d (%d%%)' % (fragments, int(fragments / len(self.nodes) * 100)))
-        self.__make_workspace(min_r)
-        self.__setup_workspace()
-
-    def sample(self) -> np.ndarray:
-        assert len(self.workspace) > 0
-        center = random.sample(self.workspace, 1)[0].pos
-        error = utils.math.random_point_in_hypersphere(self.dim_position, high=self.r)
-        return center + error
-
-    def nearest_joint_position(self, joint_position: np.ndarray) -> Node:
-        assert len(self.nodes) > 0
-        min_d2 = np.inf
-        for node in self.nodes:
-            d2 = utils.math.distance2(node.joint_position, joint_position)
-            if d2 < min_d2:
-                min_d2 = d2
-                ans = node
-        return ans
-
-    def nearest_positions(self, pos: np.ndarray) -> list[Node]:
-        def _nearest_positions(max_d: float):
-            pool: set[Node] = None
-            for i in range(self.dim_position):
-                subset: set[Node] = set()
-                node_sorted = self.sorted['pos'][i]
-                j = bisect.bisect_right(node_sorted, pos[i] - max_d, key=lambda n: n.pos[i])
-                while j < len(node_sorted) and  node_sorted[j].pos[i] <= pos[i] + max_d:
-                    subset.add(node_sorted[j])
-                    j += 1
-                if pool is None:
-                    pool = subset
-                else:
-                    pool = pool.intersection(subset)
-
-            ans = set()
-            max_d2 = max_d * max_d
-            for node in pool:
-                d2 = utils.math.distance2(pos, node.pos)
-                if d2 < max_d2:
-                    ans.add(node)
-            return ans
-        max_d = 0.05
-        ans = []
-        while len(ans) <= 0:
-            ans = _nearest_positions(max_d)
-            max_d += 0.05
-        return ans
