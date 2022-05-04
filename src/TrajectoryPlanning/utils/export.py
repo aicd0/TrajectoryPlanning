@@ -1,6 +1,7 @@
 import config
 import numpy as np
 import utils.fileio
+import utils.print
 from copy import copy
 
 def make_rect(filename: str, track: list[np.ndarray], velocity: float):
@@ -26,3 +27,4 @@ def make_rect(filename: str, track: list[np.ndarray], velocity: float):
         for joint_pos in track_export:
             line = ', '.join(['%.6f' % p for p in joint_pos]) + '\n'
             f.write(line.encode('utf-8'))
+    utils.print.put(filepath)

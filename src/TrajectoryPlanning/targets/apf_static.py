@@ -1,7 +1,6 @@
 import config
 from envs import create_environment
 from framework.algorithm.apf import ArtificialPotentialFieldPlanner
-from framework.configuration import global_configs as configs
 
 def main():
     sim, _ = create_environment('gazebo')

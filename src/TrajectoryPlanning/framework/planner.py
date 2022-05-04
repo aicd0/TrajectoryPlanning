@@ -20,6 +20,7 @@ class Planner:
             span = self.stopwatch.span()
             result = 'completed' if success else 'failed'
             utils.print.put('Task %s. Time used: %fs' % (result, span))
+        return success
 
     @abstractmethod
     def _reach(self, pos: np.ndarray) -> bool:

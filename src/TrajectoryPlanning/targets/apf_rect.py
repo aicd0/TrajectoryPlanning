@@ -1,32 +1,27 @@
-import config
 import numpy as np
 import utils.export
 import utils.print
 from envs import create_environment
 from framework.algorithm.apf import ArtificialPotentialFieldPlanner
-from framework.configuration import global_configs as configs
+    
+track = [
+    np.array([-0.4, -0.2, 0.3]),
+    np.array([-0.4,  0.2, 0.3]),
+    np.array([-0.4,  0.2, 0.7]),
+    np.array([-0.4, -0.2, 0.7]),
+    np.array([-0.4, -0.2, 0.3]),
+]
 
 def main():
-    # Load environment.
     sim, _ = create_environment('gazebo')
-
-    # Load planner.
-    planner = ArtificialPotentialFieldPlanner(sim)
-    planner.plot = True
-    
-    track = [
-        np.array([-0.4, -0.2, 0.3]),
-        np.array([-0.4, 0.2, 0.3]),
-        np.array([-0.4, 0.2, 0.7]),
-        np.array([-0.4, -0.2, 0.7]),
-    ]
+    planner = ArtificialPotentialFieldPlanner(sim, plot=True)
 
     sim.reset()
-    assert planner.reach(track[0])
+    assert planner.reach(track[0], verbose=True)
     sim.record = True
 
     for position in track:
-        assert planner.reach(position)
+        assert planner.reach(position, verbose=True)
     sim.close()
 
     states = [s.joint_position for s in sim.records]

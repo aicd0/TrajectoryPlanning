@@ -20,9 +20,8 @@ class Environment:
         ActionAmp_ = ('Environment/Gazebo/ActionAmp', 0.1)
         MaxSteps_ = ('Environment/Gazebo/MaxSteps', 150)
         StepIterations_ = ('Environment/Gazebo/StepIterations', 50) # make sure corresponding to sensor frequency
-        Workspace_ = ('Environment/Gazebo/Workspace', 'd6')
-        WorkspaceMaxD_ = ('Environment/Gazebo/WorkspaceMaxD', 0.05)
-        WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.025)
+        Workspace_ = ('Environment/Gazebo/Workspace', 'C2234')
+        WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.05)
 
     class Gym:
         MujocoLibPath = 'C:/Users/stdcn/.mujoco/mjpro150/bin' # only for Windows
@@ -96,9 +95,9 @@ class Workspace:
 
 class ArtificialPotentialField:
     Eta_ = ('ArtificialPotentialField/Eta', 1.0)
-    Samples_ = ('ArtificialPotentialField/Samples', 1000)
+    Samples_ = ('ArtificialPotentialField/Samples', 200)
     Step_ = ('ArtificialPotentialField/Step', 0.1)
-    Zeta_ = ('ArtificialPotentialField/Zeta', 5.0)
+    Zeta_ = ('ArtificialPotentialField/Zeta', 10.0)
 
 class Export:
     SaveDir = 'export'

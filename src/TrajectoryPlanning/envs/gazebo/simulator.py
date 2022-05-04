@@ -11,6 +11,7 @@ from .state import GazeboState
 from envs.simulator import Simulator
 from framework.robot import Robot1
 from framework.workspace import Workspace
+from math import pi
 from typing import Any, Type
 
 # Import ROS and Gazebo packages.
@@ -78,7 +79,6 @@ class Gazebo(Simulator):
         # Load configs
         self.action_amp = self.configs.get(config.Environment.Gazebo.ActionAmp_)
         workspace_name = self.configs.get(config.Environment.Gazebo.Workspace_)
-        workspace_max_d = self.configs.get(config.Environment.Gazebo.WorkspaceMaxD_)
         workspace_min_r = self.configs.get(config.Environment.Gazebo.WorkspaceMinR_)
 
         # Load/Make workspace.
@@ -86,14 +86,13 @@ class Gazebo(Simulator):
             joint_low = self.robot.joint_limits[0]
             joint_high = self.robot.joint_limits[1]
             joint_positions = [
-                [p for p in np.arange(joint_low[0], joint_high[0], 0.1)],
-                [p for p in np.arange(joint_low[1], joint_high[1], 0.1)],
-                [p for p in np.arange(joint_low[2], joint_high[2], 0.1)],
+                [p for p in np.arange(joint_low[0], joint_high[0], 6 * pi/180)],
+                [p for p in np.arange(joint_low[1], joint_high[1], 6 * pi/180)],
+                [p for p in np.arange(joint_low[2], joint_high[2], 9 * pi/180)],
+                [p for p in np.arange(joint_low[3], joint_high[3], 12 * pi/180)],
                 [0],
-                [-0.1, 0, 0.1],
             ]
-            self.workspace.make(self.robot, joint_positions, workspace_max_d,
-                workspace_min_r, objs=self.obstacles)
+            self.workspace.make(self.robot, joint_positions, workspace_min_r, objs=self.obstacles)
             self.workspace.save(workspace_name)
 
         # Init node.
