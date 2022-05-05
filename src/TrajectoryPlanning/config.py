@@ -95,8 +95,8 @@ class Workspace:
 
 class ArtificialPotentialField:
     Eta_ = ('ArtificialPotentialField/Eta', 1.0)
-    Samples_ = ('ArtificialPotentialField/Samples', 200)
-    Step_ = ('ArtificialPotentialField/Step', 0.1)
+    SampleCount_ = ('ArtificialPotentialField/SampleCount', 200)
+    MaxStep_ = ('ArtificialPotentialField/MaxStep', 0.1)
     Zeta_ = ('ArtificialPotentialField/Zeta', 10.0)
 
 class Export:

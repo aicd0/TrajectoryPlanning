@@ -12,14 +12,14 @@ class ReinforcementLearningPlanner(Planner):
         self.agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='rl')
         self.agent.load(enable_learning=False)
     
-    def _reach(self, pos: np.ndarray) -> bool:
+    def _reach(self, position: np.ndarray) -> bool:
         while True:
             state = self.sim.state()
-            d = utils.math.distance(state.achieved, pos)
+            d = utils.math.distance(state.achieved, position)
             if d < 0.05:
                 success = True
                 break
-            state.desired = pos
+            state.desired = position
             action = self.agent.sample_action(state, deterministic=True)
             if not self._simple_act(action, preamp=False):
                 success = False

@@ -24,7 +24,7 @@ class Planner:
         return success
 
     @abstractmethod
-    def _reach(self, pos: np.ndarray) -> bool:
+    def _reach(self, position: np.ndarray) -> bool:
         raise NotImplementedError()
 
     def _simple_act(self, action: np.ndarray, preamp=True) -> bool:
@@ -32,11 +32,10 @@ class Planner:
         while True:
             if preamp:
                 action /= self.sim.action_amp
-            old_state = self.sim.state()
-            new_state = self.sim.step(action)
+            state = self.sim.step(action)
             if self.plot:
                 self.sim.plot_step()
-            if new_state.collision:
+            if state.collision:
                 success = False
                 break
             success = True
