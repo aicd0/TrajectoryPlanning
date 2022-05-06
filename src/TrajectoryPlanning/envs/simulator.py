@@ -1,9 +1,9 @@
-from copy import deepcopy
 import numpy as np
 import utils.name
 from .reward import Reward
 from .state import State
 from abc import abstractmethod
+from copy import deepcopy
 from framework.configuration import Configuration
 
 class Simulator:

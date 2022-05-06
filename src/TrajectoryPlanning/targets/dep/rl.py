@@ -1,7 +1,10 @@
 import numpy as np
 import utils.math
+from copy import copy
 from framework.agent import create_agent
 from framework.planner import Planner
+from framework.robot import Robot
+from typing import Generator
 
 class ReinforcementLearningPlanner(Planner):
     def __init__(self, sim, **kwarg) -> None:
@@ -12,20 +15,34 @@ class ReinforcementLearningPlanner(Planner):
         self.agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='rl')
         self.agent.load(enable_learning=False)
     
-    def _reach(self, position: np.ndarray) -> bool:
+    def _plan(self, position: np.ndarray) -> Generator[np.ndarray | None, None, None]:
+        robot: Robot = self.sim.robot
+        state = copy(self.sim.state())
+        current_joint_position = state.joint_position
+        step = 0
+        
         while True:
-            state = self.sim.state()
-            d = utils.math.distance(state.achieved, position)
+            step += 1
+            yield current_joint_position
+            
+            # Reach target.
+            points = robot.collision_points(current_joint_position)
+            d = utils.math.distance(points[-1], position)
             if d < 0.05:
-                success = True
                 break
+
+            # Generate next action.
+            state.joint_position = current_joint_position
+            state.achieved = points[-1]
             state.desired = position
-            action = self.agent.sample_action(state, deterministic=True)
-            if not self._simple_act(action, preamp=False):
-                success = False
+            state.update()
+            action = self.agent.sample_action(state, deterministic=True) * self.sim.action_amp
+            next_joint_position = robot.clip(current_joint_position + action)
+            
+            # Check for local minima.
+            if step >= 150 or np.max(np.abs(next_joint_position - current_joint_position)) < 1e-5:
+                yield None
                 break
-            new_state = self.sim.state()
-            if np.max(np.abs(new_state.joint_position - state.joint_position)) < 1e-5:
-                success = d < 0.2
-                break
-        return success
+
+            # Move to next state.
+            current_joint_position = next_joint_position

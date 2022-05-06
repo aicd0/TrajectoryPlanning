@@ -7,6 +7,7 @@ from framework.geometry import Geometry
 from framework.planner import Planner
 from framework.robot import Robot
 from framework.workspace import Workspace
+from typing import Generator
 
 def __potential_a(position: np.ndarray, target_position: np.ndarray) -> float:
     zeta = configs.get(config.ArtificialPotentialField.Zeta_)
@@ -46,7 +47,7 @@ def apf1(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
     return opt_action
 
 def apf2(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
-         target_position: np.ndarray) -> list[np.ndarray]:
+         target_position: np.ndarray) -> list[np.ndarray] | None:
     finish_nodes = workspace.nearest_positions(target_position)
     if len(finish_nodes) <= 0:
         return None
@@ -81,32 +82,40 @@ def apf2(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
     return path
 
 class ArtificialPotentialFieldPlanner(Planner):
-    def __init__(self, sim, resampling=False, **kwarg) -> None:
+    def __init__(self, sim, resampling=True, **kwarg) -> None:
         super().__init__(sim, **kwarg)
         self.resampling = resampling
     
-    def _reach(self, position: np.ndarray) -> bool:
+    def _plan(self, position: np.ndarray) -> Generator[np.ndarray | None, None, None]:
+        workspace: Workspace = self.sim.workspace
+        robot: Robot = self.sim.robot
+        state = self.sim.state()
+
         if self.resampling:
+            current_joint_position = state.joint_position
             while True:
-                state = self.sim.state()
-                d = utils.math.distance(state.achieved, position)
+                yield current_joint_position
+
+                # Reach target.
+                points = robot.collision_points(current_joint_position)
+                d = utils.math.distance(points[-1], position)
                 if d < 0.05:
-                    success = True
                     break
-                joint_pos = apf1(self.sim.workspace, self.sim.robot, state.joint_position, position)
-                if np.max(np.abs(joint_pos - state.joint_position)) < 1e-5:
-                    success = False
+                
+                # Generate next action.
+                next_joint_position = apf1(workspace, robot, current_joint_position, position)
+                
+                # Check for local minima.
+                if np.max(np.abs(next_joint_position - current_joint_position)) < 1e-5:
+                    yield None
                     break
-                if not self._simple_reach(joint_pos):
-                    success = False
-                    break
-            return success
+
+                # Move to next state.
+                current_joint_position = next_joint_position
         else:
-            state = self.sim.state()
-            path = apf2(self.sim.workspace, self.sim.robot, state.joint_position, position)
-            if path is None:
-                return False
-            for joint_position in path:
-                if not self._simple_reach(joint_position):
-                    return False
-            return True
+            track = apf2(workspace, robot, state.joint_position, position)
+            if track is None:
+                yield None
+            else:
+                for joint_position in track:
+                    yield joint_position

@@ -4,6 +4,7 @@ from framework.planner import Planner
 from framework.workspace import Workspace
 from framework.workspace import Node as WorkspaceNode
 from sortedcontainers import SortedKeyList
+from typing import Generator
 
 class Node:
     def __init__(self, wsnode: WorkspaceNode) -> None:
@@ -65,12 +66,11 @@ class AStarPlanner(Planner):
     def __init__(self, sim, **kwarg) -> None:
         super().__init__(sim, **kwarg)
     
-    def _reach(self, position: np.ndarray) -> bool:
+    def _plan(self, position: np.ndarray) -> Generator[np.ndarray | None, None, None]:
         state = self.sim.state()
-        path = a_star(self.sim.workspace, state.joint_position, position)
-        if path is None:
-            return False
-        for joint_position in path:
-            if not self._simple_reach(joint_position):
-                return False
-        return True
+        track = a_star(self.sim.workspace, state.joint_position, position)
+        if track is None:
+            yield None
+        else:
+            for joint_position in track:
+                yield joint_position

@@ -40,7 +40,7 @@ class Robot:
             ans.append(np.matmul(rotation, origin) + translation)
         return ans
 
-    def clip(self, joint_pos: np.ndarray) -> bool:
+    def clip(self, joint_pos: np.ndarray) -> np.ndarray:
         return joint_pos.clip(self.joint_limits[0], self.joint_limits[1])
 
     @abstractmethod
@@ -82,4 +82,4 @@ class Robot1(Robot):
         ]
 
     def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
-        return self.origins(joint_position)[1:]
+        return self.origins(joint_position)[4:]

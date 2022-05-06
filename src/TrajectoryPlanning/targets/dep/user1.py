@@ -1,5 +1,6 @@
 import numpy as np
 import utils.math
+from copy import copy
 from framework.agent import create_agent
 from framework.algorithm.apf import apf1, apf2
 from framework.planner import Planner
@@ -16,64 +17,112 @@ class UserPlanner1(Planner):
         self.agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='rl')
         self.agent.load(enable_learning=False)
     
-    def _reach(self, position: np.ndarray) -> bool:
+    def _plan(self, position: np.ndarray) -> list[np.ndarray] | None:
         robot: Robot = self.sim.robot
         workspace: Workspace = self.sim.workspace
-        available = [True, True]
-        prefer = [True, True]
-        method_count = 2
+        state = copy(self.sim.state())
+        last_joint_position = state.joint_position
 
         while True:
-            state = self.sim.state()
-            d_target = utils.math.distance(state.achieved, position)
-            if d_target < 0.05:
-                success = True
-                break
-            state.desired = position
+            current_joint_position = last_joint_position
+            path = []
+            local_minima = False
+            collision = False
 
-            d_obj = np.inf
-            points = robot.collision_points(state.joint_position)[3:]
-            for pos in points:
-                d_obj = min(d_obj, pos[2])
-                for obstacle in workspace.obstacles:
-                    d_obj = min(d_obj, obstacle.distance(pos))
-            d_obj = max(d_obj, 0)
-
-            if d_obj < 0.15:
-                prefer[0] = False
-            elif d_obj > 0.3:
-                prefer[0] = True
-
-            # Determine which method to use.
-            method = None
-            for i in range(method_count):
-                if available[i] and prefer[i]:
-                    method = i
+            while True:
+                # Reach target.
+                points = robot.collision_points(current_joint_position)
+                d_target = utils.math.distance(points[-1], position)
+                if d_target < 0.05:
                     break
-            if method is None:
-                for i in range(method_count):
-                    if available[i]:
-                        method = i
+                
+                # Check collisions.
+                d_obj = np.inf
+                points = robot.collision_points(current_joint_position)
+                for pos in points:
+                    d_obj = min(d_obj, pos[2])
+                    for obstacle in workspace.obstacles:
+                        d_obj = min(d_obj, obstacle.distance(pos))
+                d_obj = max(d_obj, 0)
+                if d_obj < 0.05:
+                    collision = True
+                    break
+
+                # Generate next action.
+                state.joint_position = current_joint_position
+                state.achieved = points[-1]
+                state.desired = position
+                state.update()
+                action = self.agent.sample_action(state, deterministic=True) * self.sim.action_amp
+                next_joint_position = robot.clip(current_joint_position + action)
+                
+                # Check local minima.
+                if len(path) >= 50 or np.max(np.abs(next_joint_position - current_joint_position)) < 2 * pi/180:
+                    local_minima = True
+                    break
+
+                # Move to next state.
+                path.append(next_joint_position)
+                current_joint_position = next_joint_position
+
+            if collision:
+                finished = False
+                idx = -1
+                while True:
+                    if idx >= len(path):
+                        yield None
+                        return
+
+                    # Generate next action.
+                    current_joint_position = last_joint_position if idx < 0 else path[idx]
+                    next_joint_position = apf1(workspace, robot, current_joint_position, position)
+                    
+                    # Reach target.
+                    points = robot.collision_points(next_joint_position)
+                    d_target = utils.math.distance(points[-1], position)
+                    if d_target < 0.05:
+                        finished = True
                         break
-            if method is None:
-                success = False
-                break
+                    
+                    # Check local minima.
+                    if not np.max(np.abs(next_joint_position - current_joint_position)) < 0.5 * pi/180:
+                        break
+                    idx += 1
 
-            if method == 0:
-                action = self.agent.sample_action(state, deterministic=True)
-                if not self._simple_act(action, preamp=False):
-                    success = False
+                for joint_position in path[:idx + 1]:
+                    yield joint_position
+                yield next_joint_position
+                last_joint_position = next_joint_position
+                if finished:
                     break
-                new_state = self.sim.state()
-                if np.max(np.abs(new_state.joint_position - state.joint_position)) < 0.5 * pi/180:
-                    available[0] = False
-                prefer[1] = True
-            else:
-                new_joint_position = apf1(workspace, robot, state.joint_position, position)
-                if not self._simple_reach(new_joint_position):
-                    success = False
-                    break
-                new_state = self.sim.state()
-                if np.max(np.abs(new_state.joint_position - state.joint_position)) < 0.5 * pi/180:
-                    available[1] = False
-        return success
+                continue
+
+            for joint_position in path:
+                yield joint_position
+                last_joint_position = joint_position
+
+            if local_minima:
+                current_joint_position = last_joint_position
+                while True:
+                    # Generate next action.
+                    next_joint_position = apf1(workspace, robot, current_joint_position, position)
+
+                    # Check local minima.
+                    if np.max(np.abs(next_joint_position - current_joint_position)) < 0.5 * pi/180:
+                        yield None
+                        return
+                    
+                    # Perform the action.
+                    yield next_joint_position
+                    last_joint_position = next_joint_position
+
+                    # Reach target.
+                    points = robot.collision_points(next_joint_position)
+                    d_target = utils.math.distance(points[-1], position)
+                    if d_target < 0.05:
+                        return
+
+                    # Move to next state.
+                    current_joint_position = next_joint_position
+                # continue
+            return

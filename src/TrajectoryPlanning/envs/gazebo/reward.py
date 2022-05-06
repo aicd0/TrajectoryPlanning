@@ -26,7 +26,7 @@ class GazeboReward(Reward):
     def __eval_reward(self, state: GazeboState) -> float:
         d_target = utils.math.distance(state.achieved, state.desired)
         d_obj = np.inf
-        points = self.robot.collision_points(state.joint_position)[3:]
+        points = self.robot.collision_points(state.joint_position)
         for pos in points:
             d_obj = min(d_obj, pos[2])
             for obstacle in self.workspace.obstacles:
