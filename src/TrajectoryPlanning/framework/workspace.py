@@ -12,72 +12,86 @@ from copy import copy
 from framework.geometry import Geometry
 from framework.robot import Robot
 from sortedcontainers import SortedKeyList
+from typing import Any
 
 class NodeExportable:
-    def __init__(self, joint_position: np.ndarray, pos: np.ndarray, neighbours: list[int]) -> None:
+    def __init__(self, joint_position: np.ndarray, position: np.ndarray, neighbours: list[int]) -> None:
         self.joint_position = joint_position
-        self.pos = pos
+        self.position = position
         self.neighbours = neighbours
 
 class Node:
-    def __init__(self, joint_position: np.ndarray, pos: np.ndarray, neighbours: list) -> None:
-        self.joint_position = joint_position
-        self.pos = pos
-        self.neighbours = neighbours
+    def __init__(self, joint_position: np.ndarray, position: np.ndarray, neighbours: list) -> None:
         self.idx = -1
+        self.joint_position = joint_position
+        self.position = position
+        self.neighbours = neighbours
 
 class Workspace:
-    def __init__(self) -> None:
+    def __init__(self, name: str) -> None:
+        self.name = name
         self.save_dir = config.Workspace.SaveDir
         self.nodes: list[Node] = []
-        self.workspace: list[Node] = []
+        self.meta: dict[str, dict[int, Any]] = {}
+        self.cartesian_space: list[Node] = []
+        self.obstacles: list[Geometry] = []
         self.sorted = {}
+        self.r = None
 
-    def save(self, name: str) -> None:
+    def clear(self):
+        self.nodes.clear()
+        self.meta.clear()
+        self.cartesian_space.clear()
+        self.obstacles.clear()
+        self.sorted.clear()
+        self.r = None
+
+    def save(self) -> None:
         assert len(self.nodes) > 0
 
         # Export nodes.
-        nodes = [NodeExportable(n.joint_position, n.pos, [m.idx for m in n.neighbours]) for n in self.nodes]
-        workspace = [n.idx for n in self.workspace]
+        nodes = [NodeExportable(n.joint_position, n.position, [m.idx for m in n.neighbours]) for n in self.nodes]
+        cartesian_space = [n.idx for n in self.cartesian_space]
 
         utils.fileio.mktree(self.save_dir)
-        np.savez(self.save_dir + name,
+        np.savez(self.save_dir + self.name,
             nodes=np.array(nodes, dtype=object),
-            workspace=np.array(workspace, dtype=object),
+            meta=np.array(self.meta, dtype=object),
+            cartesian_space=np.array(cartesian_space, dtype=object),
+            obstacles=np.array(self.obstacles, dtype=object),
             r=self.r)
 
-    def load(self, name: str) -> bool:
-        filepath = self.save_dir + name + '.npz'
+    def load(self) -> bool:
+        filepath = self.save_dir + self.name + '.npz'
         if not os.path.exists(filepath):
             return False
         checkpoint = np.load(filepath, allow_pickle=True)
         nodes = checkpoint['nodes'].tolist()
-        workspace = checkpoint['workspace'].tolist()
+        self.meta = checkpoint['meta'].tolist()
+        cartesian_space = checkpoint['cartesian_space'].tolist()
+        self.obstacles = checkpoint['obstacles'].tolist()
         self.r = float(checkpoint['r'])
 
         # Import nodes.
-        self.nodes = [Node(n.joint_position, n.pos, []) for n in nodes]
+        self.nodes = [Node(n.joint_position, n.position, []) for n in nodes]
         for i, node in enumerate(self.nodes):
             node.neighbours = [self.nodes[j] for j in nodes[i].neighbours]
-        self.workspace = [self.nodes[i] for i in workspace]
+        self.cartesian_space = [self.nodes[i] for i in cartesian_space]
         self.__setup()
 
-        utils.print.put('Workspace loaded (' + name + ')')
+        utils.print.put('Workspace loaded (' + self.name + ')')
         return True
 
-    def make(self, robot: Robot, joint_positions: float, min_r: float, objs: list[Geometry]=[]) -> None:
-        self.__make_nodes(robot, joint_positions, objs)
+    def make(self, robot: Robot, joint_positions: float, min_r: float, obstacles: list[Geometry]=[]) -> None:
+        self.clear()
+        self.obstacles = obstacles
+        self.__make_nodes(robot, joint_positions)
         fragments = self.__fragments()
         utils.print.put('Workspace fragments: %d (%d%%)' % (fragments, int(fragments / len(self.nodes) * 100)))
-        self.__make_workspace(min_r)
+        self.__make_cartesian_space(min_r)
         self.__setup()
 
-    def sample(self) -> np.ndarray:
-        assert len(self.workspace) > 0
-        center = random.sample(self.workspace, 1)[0].pos
-        error = utils.math.random_point_in_hypersphere(self.dim_position, high=self.r)
-        return center + error
-
+    # Nodes service
     def nearest_joint_position(self, joint_position: np.ndarray) -> Node:
         assert len(self.nodes) > 0
         min_d2 = np.inf
@@ -94,8 +108,8 @@ class Workspace:
             for i in range(self.dim_position):
                 subset: set[Node] = set()
                 node_sorted = self.sorted['pos'][i]
-                j = bisect.bisect_right(node_sorted, pos[i] - max_d, key=lambda n: n.pos[i])
-                while j < len(node_sorted) and  node_sorted[j].pos[i] <= pos[i] + max_d:
+                j = bisect.bisect_right(node_sorted, pos[i] - max_d, key=lambda n: n.position[i])
+                while j < len(node_sorted) and  node_sorted[j].position[i] <= pos[i] + max_d:
                     subset.add(node_sorted[j])
                     j += 1
                 if pool is None:
@@ -106,7 +120,7 @@ class Workspace:
             ans = set()
             max_d2 = max_d * max_d
             for node in pool:
-                d2 = utils.math.distance2(pos, node.pos)
+                d2 = utils.math.distance2(pos, node.position)
                 if d2 < max_d2:
                     ans.add(node)
             return ans
@@ -117,21 +131,45 @@ class Workspace:
             max_d += 0.05
         return ans
 
+    # Meta service
+    def get_meta(self, meta: str, node: Node) -> Any | None:
+        nodes_meta = self.meta.get(meta)
+        if nodes_meta is None:
+            return None
+        return nodes_meta.get(node.idx)
+
+    def set_meta(self, meta: str, node: Node, value: Any) -> None:
+        nodes_meta = self.meta.get(meta)
+        if nodes_meta is None:
+            nodes_meta = self.meta[meta] = {}
+        nodes_meta[node.idx] = value
+
+    def clear_meta(self, meta: str) -> None:
+        if meta in self.meta:
+            del self.meta[meta]
+
+    # Sampling
+    def sample_cartesian_space(self) -> np.ndarray:
+        assert len(self.cartesian_space) > 0
+        center = random.sample(self.cartesian_space, 1)[0].position
+        error = utils.math.random_point_in_hypersphere(self.dim_position, high=self.r)
+        return center + error
+
+    # Internals
     def __setup(self) -> None:
         for i, node in enumerate(self.nodes):
             node.idx = i
-        self.dim_position = self.nodes[0].pos.shape[0]
+        self.dim_position = self.nodes[0].position.shape[0]
         self.dim_joint_position = self.nodes[0].joint_position.shape[0]
         self.sorted['pos'] = [
-            sorted(self.nodes, key=lambda n: n.pos[i]) for i in range(self.dim_position)]
+            sorted(self.nodes, key=lambda n: n.position[i]) for i in range(self.dim_position)]
         self.sorted['joint_pos'] = [
             sorted(self.nodes, key=lambda n: n.joint_position[i]) for i in range(self.dim_joint_position)]
 
-    def __make_nodes(self, robot: Robot, joint_positions: float, objs: list[Geometry]) -> None:
+    def __make_nodes(self, robot: Robot, joint_positions: float) -> None:
         state_count = math.prod([len(p) for p in joint_positions])
         assert state_count > 0
         max_depth = len(joint_positions)
-        self.nodes.clear()
 
         def _find_neighbours(dst: list[Node], partial_joint_space: list, base_idx: list[int],
                              pos: np.ndarray, current_idx: list[int], depth: int) -> None:
@@ -159,7 +197,7 @@ class Workspace:
             for origin in origins:
                 if origin[2] < 0:
                     return None
-                for obj in objs:
+                for obj in self.obstacles:
                     if obj.contain(origin):
                         return None
 
@@ -209,13 +247,12 @@ class Workspace:
         last_update_time = time.time()
         self.nodes = make_joint_space()
 
-    def __make_workspace(self, r: float) -> None:
-        self.workspace.clear()
+    def __make_cartesian_space(self, r: float) -> None:
         self.r = r
         pos_sorted = [
-            SortedKeyList(self.nodes, lambda n: float(n.pos[0])),
-            SortedKeyList(self.nodes, lambda n: float(n.pos[1])),
-            SortedKeyList(self.nodes, lambda n: float(n.pos[2])),
+            SortedKeyList(self.nodes, lambda n: float(n.position[0])),
+            SortedKeyList(self.nodes, lambda n: float(n.position[1])),
+            SortedKeyList(self.nodes, lambda n: float(n.position[2])),
         ]
         pool = set(self.nodes)
         r2 = r * r
@@ -230,7 +267,7 @@ class Workspace:
             possible_neighbours: set[Node] = None
             for i in range(3):
                 subset: set[Node] = set()
-                it = pos_sorted[i].irange_key(new_node.pos[i] - r, new_node.pos[i] + r)
+                it = pos_sorted[i].irange_key(new_node.position[i] - r, new_node.position[i] + r)
                 for node in it:
                     subset.add(node)
                 if possible_neighbours is None:
@@ -240,19 +277,19 @@ class Workspace:
             
             # Remove neighbours from lists.
             for node in possible_neighbours:
-                if utils.math.distance2(new_node.pos, node.pos) < r2:
+                if utils.math.distance2(new_node.position, node.position) < r2:
                     pool.remove(node)
                     for node_list in pos_sorted:
                         node_list.remove(node)
 
-            # Add to workspace.
-            self.workspace.append(new_node)
+            # Add to cartesian_space.
+            self.cartesian_space.append(new_node)
 
             # Progress.
             if time.time() - last_update_time > 1:
                 node_processed = len(self.nodes) - len(pool)
-                utils.print.put('Generating workspace nodes (%d - %d/%d - %d%%)' %
-                    (len(self.workspace), node_processed, len(self.nodes),
+                utils.print.put('Generating nodes in Cartesian Space (%d - %d/%d - %d%%)' %
+                    (len(self.cartesian_space), node_processed, len(self.nodes),
                     int(node_processed / len(self.nodes) * 100)), same_line=True)
                 last_update_time = time.time()
 

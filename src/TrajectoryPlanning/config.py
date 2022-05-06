@@ -75,7 +75,7 @@ class Training:
 class Testing:
     DetachAgent = False
     NoiseEnabled = False
-    MaxEpoches = 10
+    MaxEpoches = 20
     MaxIterations = 10000
 
 class Evaluator:

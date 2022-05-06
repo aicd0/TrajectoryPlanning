@@ -44,7 +44,7 @@ class Robot:
         return joint_pos.clip(self.joint_limits[0], self.joint_limits[1])
 
     @abstractmethod
-    def collision_points(self) -> list[np.ndarray]:
+    def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
         raise NotImplementedError()
 
 # User-defined

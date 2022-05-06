@@ -17,13 +17,14 @@ class Node:
         return self.from_start + self.to_finish
 
 def a_star(workspace: Workspace, joint_position: np.ndarray, target_pos: np.ndarray) -> list[np.ndarray] | None:
-    start_wsnode = workspace.nearest_joint_position(joint_position)
-    start_node = Node(start_wsnode)
     finish_wsnodes = workspace.nearest_positions(target_pos)
     if len(finish_wsnodes) <= 0:
         return None
+    start_wsnode = workspace.nearest_joint_position(joint_position)
     if start_wsnode in finish_wsnodes:
-        return [start_node.wsnode.joint_position]
+        return [start_wsnode.joint_position]
+        
+    start_node = Node(start_wsnode)
     next_node_sorted = SortedKeyList([start_node], key=lambda n: n.priority)
     next_node_map = {start_node.wsnode: start_node}
 

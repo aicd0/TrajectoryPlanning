@@ -6,13 +6,14 @@ from envs.reward import Reward
 from framework.configuration import global_configs as configs
 from framework.geometry import Geometry
 from framework.robot import Robot
+from framework.workspace import Workspace
 from math import exp
 
 class GazeboReward(Reward):
-    def __init__(self, robot: Robot, obstacles: list[Geometry]) -> None:
+    def __init__(self, robot: Robot, workspace: Workspace) -> None:
         super().__init__(configs.get(config.Environment.Gazebo.MaxSteps_))
         self.robot = robot
-        self.obstacles = obstacles
+        self.workspace = workspace
 
     def _update(self, action: np.ndarray, state: GazeboState) -> None:
         self.reward = 0
@@ -28,7 +29,7 @@ class GazeboReward(Reward):
         points = self.robot.collision_points(state.joint_position)[3:]
         for pos in points:
             d_obj = min(d_obj, pos[2])
-            for obstacle in self.obstacles:
+            for obstacle in self.workspace.obstacles:
                 d_obj = min(d_obj, obstacle.distance(pos))
         d_obj = max(d_obj, 0)
         reward = 1 if d_target < 0.05 else 0

@@ -66,24 +66,25 @@ class Gazebo(Simulator):
             raise Exception()
         Gazebo.__client_activated = True
 
-        self.robot = Robot1()
-        self.workspace = Workspace()
-        self.obstacles = [
-            geo.Box(np.array([0, 0, 0.1]), np.array([1.1, 1.1, 0.3])),
-            geo.Box(np.array([ 0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
-            geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
-            geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
-            geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
-        ]
-        self.__desired = None
-
         # Load configs
         self.action_amp = self.configs.get(config.Environment.Gazebo.ActionAmp_)
         workspace_name = self.configs.get(config.Environment.Gazebo.Workspace_)
         workspace_min_r = self.configs.get(config.Environment.Gazebo.WorkspaceMinR_)
 
+        # ~
+        self.robot = Robot1()
+        self.workspace = Workspace(workspace_name)
+        self.__desired = None
+
         # Load/Make workspace.
-        if not self.workspace.load(workspace_name):
+        if not self.workspace.load():
+            obstacles = [
+                geo.Box(np.array([0, 0, 0.1]), np.array([1.1, 1.1, 0.3])),
+                geo.Box(np.array([ 0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
+                geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
+                geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
+                geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
+            ]
             joint_low = self.robot.joint_limits[0]
             joint_high = self.robot.joint_limits[1]
             joint_positions = [
@@ -93,8 +94,8 @@ class Gazebo(Simulator):
                 [p for p in np.arange(joint_low[3], joint_high[3], 12 * pi/180)],
                 [0],
             ]
-            self.workspace.make(self.robot, joint_positions, workspace_min_r, objs=self.obstacles)
-            self.workspace.save(workspace_name)
+            self.workspace.make(self.robot, joint_positions, workspace_min_r, obstacles=obstacles)
+            self.workspace.save()
 
         # Init node.
         rospy.init_node('core_controller_node')
@@ -238,7 +239,7 @@ class Gazebo(Simulator):
 
     def _reset(self) -> None:
         # Set target point randomly.
-        self.__desired = self.workspace.sample()
+        self.__desired = self.workspace.sample_cartesian_space()
         self.place_marker('marker_red', self.__desired)
 
         # Randomly reset robot state.
@@ -264,4 +265,4 @@ class Gazebo(Simulator):
         return 5
         
     def reward(self) -> GazeboReward:
-        return GazeboReward(self.robot, self.obstacles)
+        return GazeboReward(self.robot, self.workspace)
