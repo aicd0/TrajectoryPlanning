@@ -9,6 +9,7 @@ import utils.fileio
 import utils.math
 import utils.print
 from copy import copy
+from framework.configuration import global_configs as configs
 from framework.geometry import Geometry
 from framework.robot import Robot
 from sortedcontainers import SortedKeyList
@@ -167,6 +168,7 @@ class Workspace:
             sorted(self.nodes, key=lambda n: n.joint_position[i]) for i in range(self.dim_joint_position)]
 
     def __make_nodes(self, robot: Robot, joint_positions: float) -> None:
+        obstacle_margin = configs.get(config.Workspace.ObstacleMargin_)
         state_count = math.prod([len(p) for p in joint_positions])
         assert state_count > 0
         max_depth = len(joint_positions)
@@ -195,10 +197,10 @@ class Workspace:
             # Check collisions.
             origins = robot.collision_points(joint_position)
             for origin in origins:
-                if origin[2] < 0:
+                if origin[2] < obstacle_margin:
                     return None
                 for obj in self.obstacles:
-                    if obj.contain(origin):
+                    if obj.distance(origin) < obstacle_margin:
                         return None
 
             # Lookup neighbours.

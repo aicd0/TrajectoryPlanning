@@ -20,7 +20,6 @@ class GazeboReward(Reward):
         self.done = False
         if state.collision:
             return
-        d = utils.math.distance(state.achieved, state.desired)
         self.reward = self.__eval_reward(state)
 
     def __eval_reward(self, state: GazeboState) -> float:

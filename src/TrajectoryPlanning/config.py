@@ -92,6 +92,7 @@ class Evaluator:
 
 class Workspace:
     SaveDir = 'workspace'
+    ObstacleMargin_ = ('Workspace/ObstacleMargin', 0.1)
 
 class ArtificialPotentialField:
     Eta_ = ('ArtificialPotentialField/Eta', 1.0)

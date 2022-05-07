@@ -37,7 +37,7 @@ class Plot:
         self.y_std.append(np.std(self.y[-1]))
 
         win_begin = max(0, len(self.x_epoch) - self.window)
-        y_window = np.array(self.y[win_begin:])
+        y_window = np.hstack(self.y[win_begin:])
         y_avg_window = np.array(self.y_avg[win_begin:])
         self.y_avg_win.append(np.mean(y_avg_window))
         self.y_std_win.append(np.std(y_window))

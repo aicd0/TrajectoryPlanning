@@ -79,11 +79,11 @@ class Gazebo(Simulator):
         # Load/Make workspace.
         if not self.workspace.load():
             obstacles = [
-                geo.Box(np.array([0, 0, 0.1]), np.array([1.1, 1.1, 0.3])),
-                geo.Box(np.array([ 0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
-                geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
-                geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.4, 0.4, 4])),
-                geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.4, 0.4, 4])),
+                geo.Box(np.array([0, 0, 0.1]), np.array([1, 1, 0.2])),
+                geo.Box(np.array([ 0.701,  0.701, 2]), np.array([0.302, 0.302, 4])),
+                geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
+                geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.302, 0.302, 4])),
+                geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
             ]
             joint_low = self.robot.joint_limits[0]
             joint_high = self.robot.joint_limits[1]
