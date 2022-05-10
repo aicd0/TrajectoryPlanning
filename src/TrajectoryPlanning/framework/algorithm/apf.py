@@ -48,11 +48,11 @@ def apf1(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
 
 def apf2(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
          target_position: np.ndarray) -> list[np.ndarray] | None:
-    finish_nodes = workspace.nearest_positions(target_position)
+    finish_nodes = workspace.nearest_nodes_from_position_2(target_position, max_d=0.05)
     if len(finish_nodes) <= 0:
         return None
+    current_node = workspace.nearest_node_from_joint_position_2(joint_position)
     path = []
-    current_node = workspace.nearest_joint_position(joint_position)
     workspace_changed = False
 
     while True:

@@ -246,14 +246,16 @@ class Gazebo(Simulator):
         self.__random_state()
 
     def _step(self, action: np.ndarray) -> None:
+        last_state = self.state()
+        if last_state.collision:
+            return
         action = action.clip(-1, 1)
-        last_position = self.state().joint_position
-        this_position = last_position + action * self.action_amp
-        self.__step(this_position)
-        state = self.state()
-        if state.collision:
-            self.__step(last_position)
-            self.state().collision = True
+        joint_position = last_state.joint_position + action * self.action_amp
+        self.__step(joint_position)
+        # state = self.state()
+        # if state.collision:
+        #     self.__step(last_position)
+        #     self.state().collision = True
 
     def plot_reset(self) -> None:
         pass

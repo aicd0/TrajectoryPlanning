@@ -53,7 +53,7 @@ class Evaluator:
         need_plot = self.epoches - self.last_plot_epoch >= max_plot_epoch_interval
         
         if allow_save and not self.agent is None:
-            save_val = self.plot_manager.get_plot(self.plot_step_reward).y_avg_win[-1]
+            save_val = self.plot_manager.get_plot(self.plot_epoch_reward).y_avg_win[-1]
             if self.max_save_val is None or save_val > self.max_save_val:
                 self.max_save_val = save_val
                 self.last_save_step = self.steps

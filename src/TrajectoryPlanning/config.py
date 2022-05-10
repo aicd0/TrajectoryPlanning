@@ -5,7 +5,7 @@ from utils.string_utils import to_folder_path as todir
 class Common:
     ProjectDir = 'main'
     ConfigDir = 'configs'
-    Target_ = ('Common/Target', 'rl_train')
+    Target_ = ('Common/Target', 'debug')
 
     class DataType:
         Numpy = np.float32
@@ -31,6 +31,30 @@ class Environment:
         OutputDir = 'MATLAB'
         SessionFile = '../../output/MatlabLauncher/session.txt'
         ActionAmp_ = ('Environment/MATLAB/ActionAmp', 0.1)
+
+class Training:
+    MinLogStepInterval = 500
+    LoadFromPreviousSession_ = ('Training/LoadFromPreviousSession', False)
+    MaxEpoches_ = ('Training/MaxEpoches', 200000)
+    ProtectedEpoches_ = ('Training/ProtectedEpoches', 20)
+
+class Testing:
+    DetachAgent = False
+    NoiseEnabled = False
+    MaxEpoches = 50
+    MaxIterations = 10000
+
+class Evaluator:
+    SaveDir = 'evaluators'
+    FigureDir = 'figures'
+    EpochWindowSize_ = ('Evaluator/EpochWindowSize', 20)
+    MinSaveStepInterval_ = ('Evaluator/MinSaveStepInterval', 1000)
+
+    class Figure:
+        DPI_ = ('Evaluator/Figure/DPI', 300)
+        Height_ = ('Evaluator/Figure/Height', 5)
+        Width_ = ('Evaluator/Figure/Width', 9)
+        MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
@@ -65,30 +89,6 @@ class Agent:
     class SAC:
         AutoEntropyTuning_ = ('Agent/SAC/AutoEntropyTuning', True)
         LRAlpha_ = ('Agent/SAC/LRAlpha', 0.0001)
-
-class Training:
-    MinLogStepInterval = 500
-    LoadFromPreviousSession_ = ('Training/LoadFromPreviousSession', False)
-    MaxEpoches_ = ('Training/MaxEpoches', 200000)
-    ProtectedEpoches_ = ('Training/ProtectedEpoches', 20)
-
-class Testing:
-    DetachAgent = False
-    NoiseEnabled = False
-    MaxEpoches = 20
-    MaxIterations = 10000
-
-class Evaluator:
-    SaveDir = 'evaluators'
-    FigureDir = 'figures'
-    EpochWindowSize_ = ('Evaluator/EpochWindowSize', 20)
-    MinSaveStepInterval_ = ('Evaluator/MinSaveStepInterval', 1000)
-
-    class Figure:
-        DPI_ = ('Evaluator/Figure/DPI', 300)
-        Height_ = ('Evaluator/Figure/Height', 5)
-        Width_ = ('Evaluator/Figure/Width', 9)
-        MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
 
 class Workspace:
     SaveDir = 'workspace'

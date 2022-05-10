@@ -22,9 +22,9 @@ class Node:
 def bidirectional_a_star(workspace: Workspace, joint_position: np.ndarray,
                          target_pos: np.ndarray) -> list[np.ndarray] | None:
     '''Bidirectional A* implementation.'''
-    start_wsnodes = set([workspace.nearest_joint_position(joint_position)])
+    start_wsnodes = set([workspace.nearest_node_from_joint_position_2(joint_position)])
     assert len(start_wsnodes) > 0
-    finish_wsnodes = set(workspace.nearest_positions(target_pos))
+    finish_wsnodes = workspace.nearest_nodes_from_position_2(target_pos, max_d=0.05)
     assert len(finish_wsnodes) > 0
 
     estimator = lambda nfrom, nto: min([utils.math.distance(

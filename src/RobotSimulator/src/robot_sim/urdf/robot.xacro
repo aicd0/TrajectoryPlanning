@@ -76,12 +76,12 @@
 
   <!-- Link 0 -->
   <link name="link0">
-    <collision>
+    <!-- <collision>
       <origin xyz="0 0 ${link0_length/2}" rpy="0 0 0"/>
       <geometry>
 	      <cylinder radius="${link_radius}" length="${link0_length}" />
       </geometry>
-    </collision>
+    </collision> -->
 
     <visual>
       <origin xyz="0 0 ${link0_length/2}" rpy="0 0 0"/>

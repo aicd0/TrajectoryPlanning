@@ -9,9 +9,9 @@ class GymReward(Reward):
         super().__init__()
         self.env_name = configs.get(config.Environment.Gym.Environment_)
 
-    def _update(self, action: np.ndarray, state: GymState) -> None:
-        reward = self.__state2reward(state)
-        return reward, state.raw_done
+    def _update(self, state: GymState, action: np.ndarray, next_state: GymState) -> None:
+        reward = self.__state2reward(next_state)
+        return reward, next_state.raw_done
 
     def __state2reward(self, state: GymState):
         if self.env_name == 'CartPole-v0':

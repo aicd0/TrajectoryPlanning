@@ -56,9 +56,10 @@ class Workspace:
 
         utils.fileio.mktree(self.save_dir)
         np.savez(self.save_dir + self.name,
-            nodes=np.array(nodes, dtype=object),
-            meta=np.array(self.meta, dtype=object),
             cartesian_space=np.array(cartesian_space, dtype=object),
+            joint_levels=np.array(self.joint_levels, dtype=object),
+            meta=np.array(self.meta, dtype=object),
+            nodes=np.array(nodes, dtype=object),
             obstacles=np.array(self.obstacles, dtype=object),
             r=self.r)
 
@@ -67,9 +68,11 @@ class Workspace:
         if not os.path.exists(filepath):
             return False
         checkpoint = np.load(filepath, allow_pickle=True)
-        nodes = checkpoint['nodes'].tolist()
-        self.meta = checkpoint['meta'].tolist()
+
         cartesian_space = checkpoint['cartesian_space'].tolist()
+        self.joint_levels = checkpoint['joint_levels'].tolist()
+        self.meta = checkpoint['meta'].tolist()
+        nodes = checkpoint['nodes'].tolist()
         self.obstacles = checkpoint['obstacles'].tolist()
         self.r = float(checkpoint['r'])
 
@@ -93,7 +96,8 @@ class Workspace:
         self.__setup()
 
     # Nodes service
-    def nearest_joint_position(self, joint_position: np.ndarray) -> Node:
+    def nearest_node_from_joint_position_1(self, joint_position: np.ndarray) -> Node:
+        '''Baseline method.'''
         assert len(self.nodes) > 0
         min_d2 = np.inf
         for node in self.nodes:
@@ -103,33 +107,81 @@ class Workspace:
                 ans = node
         return ans
 
-    def nearest_positions(self, pos: np.ndarray) -> list[Node]:
-        def _nearest_positions(max_d: float):
-            pool: set[Node] = None
-            for i in range(self.dim_position):
-                subset: set[Node] = set()
-                node_sorted = self.sorted['pos'][i]
-                j = bisect.bisect_right(node_sorted, pos[i] - max_d, key=lambda n: n.position[i])
-                while j < len(node_sorted) and  node_sorted[j].position[i] <= pos[i] + max_d:
-                    subset.add(node_sorted[j])
-                    j += 1
-                if pool is None:
-                    pool = subset
-                else:
-                    pool = pool.intersection(subset)
+    def nearest_node_from_joint_position_2(self, joint_position: np.ndarray) -> Node:
+        assert len(self.nodes) > 0
 
-            ans = set()
-            max_d2 = max_d * max_d
-            for node in pool:
-                d2 = utils.math.distance2(pos, node.position)
-                if d2 < max_d2:
-                    ans.add(node)
+        def helper(nodes, max_err=None, depth=0):
+            key = lambda n: n.joint_position[depth]
+            bounded = lambda i: min(max(0, i), len(levels) - 1)
+            if depth >= self.dim_joint_position:
+                return nodes
+            nodes = sorted(nodes, key=key)
+            pos = joint_position[depth]
+            levels = self.joint_levels[depth]
+            l_low = bounded(bisect.bisect_right(levels, pos) - 1)
+            l_high = bounded(bisect.bisect_right(levels, pos))
+            ans = None
+            while True:
+                pos_min = levels[l_low]
+                pos_max = levels[l_high]
+                err = pos_max - pos_min
+                if not max_err is None and err > max_err:
+                    break
+                if err < 1e-5:
+                    err = None
+                i_min = bisect.bisect_left(nodes, pos_min, key=key)
+                i_max = bisect.bisect_right(nodes, pos_max, key=key)
+                if i_min >= len(nodes) or i_max <= 0:
+                    break
+                ans = helper(nodes[i_min : i_max], err if max_err is None else max_err, depth + 1)
+                if not ans is None:
+                    break
+                if i_min <= 0 and i_max >= len(nodes) - 1:
+                    break
+                l_low = max(l_low - 1, 0)
+                l_high = min(l_high + 1, len(levels) - 1)
             return ans
-        max_d = 0.05
-        ans = []
-        while len(ans) <= 0:
-            ans = _nearest_positions(max_d)
-            max_d += 0.05
+
+        nodes = helper(self.sorted['joint_position'][0])
+        assert not nodes is None
+        min_d2 = np.inf
+        for node in nodes:
+            d2 = utils.math.distance2(node.joint_position, joint_position)
+            if d2 < min_d2:
+                min_d2 = d2
+                ans = node
+        return ans
+
+    def nearest_nodes_from_position_1(self, position: np.ndarray, max_d: float) -> set[Node]:
+        '''Baseline method.'''
+        assert len(self.nodes) > 0
+        max_d2 = max_d * max_d
+        ans = set()
+        for node in self.nodes:
+            d2 = utils.math.distance2(node.position, position)
+            if d2 < max_d2:
+                ans.add(node)
+        return ans
+
+    def nearest_nodes_from_position_2(self, position: np.ndarray, max_d: float) -> set[Node]:
+        pool: set[Node] = None
+        for i in range(self.dim_position):
+            subset: set[Node] = set()
+            node_sorted = self.sorted['position'][i]
+            j = bisect.bisect_right(node_sorted, position[i] - max_d, key=lambda n: n.position[i])
+            while j < len(node_sorted) and node_sorted[j].position[i] <= position[i] + max_d:
+                subset.add(node_sorted[j])
+                j += 1
+            if pool is None:
+                pool = subset
+            else:
+                pool = pool.intersection(subset)
+        ans = set()
+        max_d2 = max_d * max_d
+        for node in pool:
+            d2 = utils.math.distance2(position, node.position)
+            if d2 < max_d2:
+                ans.add(node)
         return ans
 
     # Meta service
@@ -162,16 +214,17 @@ class Workspace:
             node.idx = i
         self.dim_position = self.nodes[0].position.shape[0]
         self.dim_joint_position = self.nodes[0].joint_position.shape[0]
-        self.sorted['pos'] = [
+        self.sorted['position'] = [
             sorted(self.nodes, key=lambda n: n.position[i]) for i in range(self.dim_position)]
-        self.sorted['joint_pos'] = [
+        self.sorted['joint_position'] = [
             sorted(self.nodes, key=lambda n: n.joint_position[i]) for i in range(self.dim_joint_position)]
 
-    def __make_nodes(self, robot: Robot, joint_positions: float) -> None:
+    def __make_nodes(self, robot: Robot, joint_levels: float) -> None:
         obstacle_margin = configs.get(config.Workspace.ObstacleMargin_)
-        state_count = math.prod([len(p) for p in joint_positions])
+        joint_levels = [sorted(l) for l in joint_levels]
+        state_count = math.prod([len(p) for p in joint_levels])
         assert state_count > 0
-        max_depth = len(joint_positions)
+        max_depth = len(joint_levels)
 
         def _find_neighbours(dst: list[Node], partial_joint_space: list, base_idx: list[int],
                              pos: np.ndarray, current_idx: list[int], depth: int) -> None:
@@ -218,7 +271,7 @@ class Workspace:
                               current_state: list[np.ndarray], current_idx: list[int], depth: int):
             nonlocal last_update_time, node_processed
 
-            for i, state in enumerate(joint_positions[depth]):
+            for i, state in enumerate(joint_levels[depth]):
                 current_state[depth] = state
                 current_idx[depth] = i
                 if depth >= max_depth - 1:
@@ -247,6 +300,7 @@ class Workspace:
             return pool
         
         last_update_time = time.time()
+        self.joint_levels = joint_levels
         self.nodes = make_joint_space()
 
     def __make_cartesian_space(self, r: float) -> None:

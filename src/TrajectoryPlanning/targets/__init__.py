@@ -14,4 +14,5 @@ elif __target == 'robot': from . import robot as target
 elif __target == 'stopwatch': from . import stopwatch as target
 elif __target == 'user1_rect': from . import user1_rect as target
 elif __target == 'user1_static': from . import user1_static as target
+elif __target == 'workspace': from . import workspace as target
 else: raise Exception("Unrecognized target '%s'" % __target)

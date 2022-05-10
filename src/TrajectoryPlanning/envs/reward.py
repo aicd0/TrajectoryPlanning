@@ -15,14 +15,14 @@ class Reward:
         self.step = 0
         self.done = False
 
-    def update(self, action: np.ndarray, state: State) -> Tuple:
+    def update(self, state: State, action: np.ndarray, next_state: State) -> Tuple:
         if not self.done:
-            self._update(action, state)
+            self._update(state, action, next_state)
             self.step += 1
             if self.max_steps > 0 and self.step >= self.max_steps:
                 self.done = True
         return self.reward, self.done
 
     @abstractmethod
-    def _update(self, action: np.ndarray, state: State) -> None:
+    def _update(self, state: State, action: np.ndarray, next_state: State) -> None:
         raise NotImplementedError()

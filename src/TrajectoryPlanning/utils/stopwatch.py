@@ -12,9 +12,10 @@ class Stopwatch:
             self.__begin = time.time()
 
     def pause(self) -> None:
+        t = time.time()
         if self.__start:
+            self.__span += t - self.__begin
             self.__start = False
-            self.__span += time.time() - self.__begin
 
     def reset(self) -> None:
         self.__start = False

@@ -15,24 +15,29 @@ class GazeboReward(Reward):
         self.robot = robot
         self.workspace = workspace
 
-    def _update(self, action: np.ndarray, state: GazeboState) -> None:
-        self.reward = 0
+    def _update(self, state: GazeboState, action: np.ndarray, next_state: GazeboState) -> None:
         self.done = False
-        if state.collision:
-            return
-        self.reward = self.__eval_reward(state)
 
-    def __eval_reward(self, state: GazeboState) -> float:
-        d_target = utils.math.distance(state.achieved, state.desired)
+        # Collision check.
+        if next_state.collision:
+            self.reward = 0
+            return
+
+        # Target reached.
+        d_target = utils.math.distance(next_state.achieved, next_state.desired)
+        if d_target < 0.05:
+            self.reward = 20
+            return
+
+        # Normal reward.
         d_obj = np.inf
-        points = self.robot.collision_points(state.joint_position)
+        points = self.robot.collision_points(next_state.joint_position)
         for pos in points:
             d_obj = min(d_obj, pos[2])
             for obstacle in self.workspace.obstacles:
                 d_obj = min(d_obj, obstacle.distance(pos))
         d_obj = max(d_obj, 0)
-        reward = 1 if d_target < 0.05 else 0
-        reward += exp(-0.69 * d_target * (1 + 1 / (d_obj * 2 + 1e-5)))
+        reward = exp(-0.69 * d_target * (1 + 1 / (d_obj * 2 + 1e-5)))
         reward *= 10
-        assert 0 <= reward <= 20
-        return reward
+        assert 0 <= reward <= 10
+        self.reward = reward

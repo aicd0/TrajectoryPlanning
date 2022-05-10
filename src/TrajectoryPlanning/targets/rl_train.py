@@ -74,7 +74,7 @@ def main():
             next_state = sim.step(action)
 
             # Calculate reward and add to replay buffer.
-            reward, done = game.update(action, next_state)
+            reward, done = game.update(state, action, next_state)
             trans = Transition(state, action, reward, next_state)
             agent.replay_buffer.append(trans)
             epoch_replay_buffer.append(trans)

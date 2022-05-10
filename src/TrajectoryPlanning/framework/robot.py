@@ -6,23 +6,11 @@ class Robot:
         assert all(joint_limits[0] < joint_limits[1])
         self.joint_limits = joint_limits
 
-    @staticmethod
-    def _from_dh(a, al, d, th):
-        rotation = np.array([
-            [th[1], -th[0], 0],
-            [th[0] * al[1], th[1] * al[1], -al[0]],
-            [th[0] * al[0], th[1] * al[0], al[1]]
-        ])
-        translation = np.array([
-            a,
-            -d * al[0],
-            d * al[1]
-        ])
-        return rotation, translation
+    def clip(self, joint_pos: np.ndarray) -> np.ndarray:
+        return joint_pos.clip(self.joint_limits[0], self.joint_limits[1])
 
-    @abstractmethod
-    def _dh(x: np.ndarray) -> list:
-        raise NotImplementedError()
+    def random_joint_position(self) -> np.ndarray:
+        return np.random.uniform(self.joint_limits[0], self.joint_limits[1])
 
     def origins(self, joint_position: np.ndarray) -> list[np.ndarray]:
         s = np.sin(joint_position)[:, np.newaxis]
@@ -40,14 +28,29 @@ class Robot:
             ans.append(np.matmul(rotation, origin) + translation)
         return ans
 
-    def clip(self, joint_pos: np.ndarray) -> np.ndarray:
-        return joint_pos.clip(self.joint_limits[0], self.joint_limits[1])
-
     @abstractmethod
     def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
         raise NotImplementedError()
 
-# User-defined
+    @abstractmethod
+    def _dh(x: np.ndarray) -> list:
+        raise NotImplementedError()
+
+    @staticmethod
+    def _from_dh(a, al, d, th):
+        rotation = np.array([
+            [th[1], -th[0], 0],
+            [th[0] * al[1], th[1] * al[1], -al[0]],
+            [th[0] * al[0], th[1] * al[0], al[1]]
+        ])
+        translation = np.array([
+            a,
+            -d * al[0],
+            d * al[1]
+        ])
+        return rotation, translation
+
+# User-defined robots
 class Robot1(Robot):
     __joint_limits = np.array([
         [
@@ -68,6 +71,9 @@ class Robot1(Robot):
     def __init__(self) -> None:
         super().__init__(Robot1.__joint_limits)
 
+    def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
+        return self.origins(joint_position)[4:]
+
     def _dh(self, x: np.ndarray):
         zero = [0, 1]
         return [
@@ -80,6 +86,3 @@ class Robot1(Robot):
             Robot._from_dh(      0, zero, 0.1025, x[4]),
             Robot._from_dh( -0.144, zero,      0, zero),
         ]
-
-    def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
-        return self.origins(joint_position)[4:]

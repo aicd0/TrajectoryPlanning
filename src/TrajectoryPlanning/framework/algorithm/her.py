@@ -30,7 +30,7 @@ def her(replay_buffer: list[Transition], k: int, game: Reward) -> list[Transitio
             new_action = trans.action
 
             game.reset()
-            reward, _ = game.update(new_action, new_next_state)
+            reward, _ = game.update(new_state, new_action, new_next_state)
 
             new_trans = Transition(new_state, new_action, reward, new_next_state)
             new_replay_buffer.append(new_trans)
