@@ -21,12 +21,17 @@ class GazeboReward(Reward):
         # Collision check.
         if next_state.collision:
             self.reward = 0
+            if state.collision:
+                self.done = True
             return
 
         # Target reached.
         d_target = utils.math.distance(next_state.achieved, next_state.desired)
         if d_target < 0.05:
             self.reward = 20
+            last_d_target = utils.math.distance(state.achieved, state.desired)
+            if last_d_target < 0.05:
+                self.done = True
             return
 
         # Normal reward.

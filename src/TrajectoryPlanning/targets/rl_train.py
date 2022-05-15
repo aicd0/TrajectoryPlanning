@@ -38,7 +38,7 @@ def main():
         sigma=configs.get(config.Agent.ActionNoise.Normal.Sigma_))
 
     # Load agent.
-    agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='rl')
+    agent = create_agent('sac', 'sac/l4', dim_state, dim_action, name='rl')
     evaluator = Evaluator(agent)
     if load_from_previous:
         evaluator.load()

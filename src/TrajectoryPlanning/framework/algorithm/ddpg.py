@@ -52,7 +52,7 @@ class DDPG(Agent):
         return self.actor(state).detach().numpy()
 
     def learn(self):
-        # Sample BatchSize transitions from replay buffer for optimization.
+        # Sample a minibatch from replay buffer for optimization.
         sampled_trans = self.replay_buffer.sample(self.batchsize)
 
         # Convert to ndarray.
@@ -101,7 +101,7 @@ class DDPG(Agent):
 
         # [optional] Update transition priority.
         if self.configs.get(config.Agent.PER.Enabled_):
-            priorities = critic_loss_val
+            priorities = torch.abs(q_pred - q_targ)
             priorities **= self.configs.get(config.Agent.PER.Alpha_)
             priorities *= self.configs.get(config.Agent.PER.K_)
             for i in range(len(sampled_trans)):

@@ -14,7 +14,7 @@ class UserPlanner1(Planner):
         state = self.sim.reset()
         dim_action = self.sim.dim_action()
         dim_state = state.dim_state()
-        self.agent = create_agent('sac', 'sac/l3', dim_state, dim_action, name='rl')
+        self.agent = create_agent('sac', 'sac/l4', dim_state, dim_action, name='rl')
         self.agent.load(enable_learning=False)
     
     def _plan(self, position: np.ndarray) -> list[np.ndarray] | None:
@@ -30,12 +30,6 @@ class UserPlanner1(Planner):
             collision = False
 
             while True:
-                # Reach target.
-                points = robot.collision_points(current_joint_position)
-                d_target = utils.math.distance(points[-1], position)
-                if d_target < 0.05:
-                    break
-                
                 # Check collisions.
                 d_obj = np.inf
                 points = robot.collision_points(current_joint_position)
@@ -47,6 +41,11 @@ class UserPlanner1(Planner):
                 if d_obj < 0.05:
                     collision = True
                     break
+                
+                # Reach target.
+                d_target = utils.math.distance(points[-1], position)
+                if d_target < 0.05:
+                    break
 
                 # Generate next action.
                 state.joint_position = current_joint_position
@@ -57,7 +56,8 @@ class UserPlanner1(Planner):
                 next_joint_position = robot.clip(current_joint_position + action)
                 
                 # Check local minima.
-                if len(path) >= 50 or np.max(np.abs(next_joint_position - current_joint_position)) < 2 * pi/180:
+                joint_delta = np.max(np.abs(next_joint_position - current_joint_position))
+                if len(path) >= 50 or joint_delta < 2 * pi/180:
                     local_minima = True
                     break
 

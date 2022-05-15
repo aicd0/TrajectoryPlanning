@@ -72,7 +72,10 @@ class Robot1(Robot):
         super().__init__(Robot1.__joint_limits)
 
     def collision_points(self, joint_position: np.ndarray) -> list[np.ndarray]:
-        return self.origins(joint_position)[4:]
+        origins = self.origins(joint_position)
+        ans = origins[3:]
+        ans[0] = (origins[3] + origins[4]) / 2
+        return ans
 
     def _dh(self, x: np.ndarray):
         zero = [0, 1]

@@ -9,12 +9,12 @@ from framework.robot import Robot
 from framework.workspace import Workspace
 from typing import Generator
 
-def __potential_a(position: np.ndarray, target_position: np.ndarray) -> float:
+def potential_a(position: np.ndarray, target_position: np.ndarray) -> float:
     zeta = configs.get(config.ArtificialPotentialField.Zeta_)
     d = utils.math.distance(position, target_position)
     return zeta * (d - 1 / (d + 1e-5))
 
-def __potential_b(points: list[np.ndarray], obstacles: list[Geometry]) -> float:
+def potential_b(points: list[np.ndarray], obstacles: list[Geometry]) -> float:
     eta = configs.get(config.ArtificialPotentialField.Eta_)
     potential = 0
     for pos in points:
@@ -34,15 +34,15 @@ def apf1(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
     actions.append(np.zeros(dim))
     actions = max_step * np.array(actions)
     
-    min_potential = np.inf
+    min_p = np.inf
     for action in actions:
         new_joint_position = robot.clip(joint_position + action)
         points = robot.collision_points(new_joint_position)
-        potential_a = __potential_a(points[-1], target_position)
-        potential_b = __potential_b(points, workspace.obstacles)
-        potential = potential_a + potential_b
-        if potential < min_potential:
-            min_potential = potential
+        pa = potential_a(points[-1], target_position)
+        pb = potential_b(points, workspace.obstacles)
+        p = pa + pb
+        if p < min_p:
+            min_p = p
             opt_action = new_joint_position
     return opt_action
 
@@ -53,38 +53,48 @@ def apf2(workspace: Workspace, robot: Robot, joint_position: np.ndarray,
         return None
     current_node = workspace.nearest_node_from_joint_position_2(joint_position)
     path = []
-    workspace_changed = False
 
+    def eval_p(node):
+        pa = potential_a(node.position, target_position)
+        pb = workspace.get_meta('potential', node)
+        return pa + pb
+
+    current_p = eval_p(current_node)
     while True:
         path.append(current_node.joint_position)
         if current_node in finish_nodes:
             break
-        min_potential = np.inf
-        neighbours = copy(current_node.neighbours)
-        neighbours.append(current_node)
-        for node in neighbours:
-            potential_a = __potential_a(node.position, target_position)
-            potential_b = workspace.get_meta('potential', node)
-            if potential_b is None:
-                points = robot.collision_points(node.joint_position)
-                potential_b = __potential_b(points, workspace.obstacles)
-                workspace.set_meta('potential', node, potential_b)
-                workspace_changed = True
-            potential = potential_a + potential_b
-            if potential < min_potential:
-                min_potential = potential
+        min_p = np.inf
+        for node in current_node.neighbours:
+            p = eval_p(node)
+            if p < min_p:
+                min_p = p
                 next_node = node
-        if next_node is current_node:
+        if min_p >= current_p:
             return None
         current_node = next_node
-    if workspace_changed:
-        workspace.save()
+        current_p = min_p
     return path
 
 class ArtificialPotentialFieldPlanner(Planner):
     def __init__(self, sim, resampling=True, **kwarg) -> None:
         super().__init__(sim, **kwarg)
         self.resampling = resampling
+
+        # Post initialization.
+        workspace = self.sim.workspace
+        robot: Robot = self.sim.robot
+
+        if not self.resampling:
+            workspace_changed = False
+            for node in workspace.nodes:
+                pb = workspace.get_meta('potential', node)
+                if pb is None:
+                    points = robot.collision_points(node.joint_position)
+                    pb = potential_b(points, workspace.obstacles)
+                    workspace.set_meta('potential', node, pb)
+            if workspace_changed:
+                workspace.save()
     
     def _plan(self, position: np.ndarray) -> Generator[np.ndarray | None, None, None]:
         workspace: Workspace = self.sim.workspace

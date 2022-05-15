@@ -3,7 +3,7 @@ import torch
 from utils.string_utils import to_folder_path as todir
 
 class Common:
-    ProjectDir = 'main'
+    ProjectDir = 'ablation_study/sac_g99_k2_per'
     ConfigDir = 'configs'
     Target_ = ('Common/Target', 'debug')
 
@@ -20,7 +20,7 @@ class Environment:
         ActionAmp_ = ('Environment/Gazebo/ActionAmp', 0.1)
         MaxSteps_ = ('Environment/Gazebo/MaxSteps', 150)
         StepIterations_ = ('Environment/Gazebo/StepIterations', 50) # make sure corresponding to sensor frequency
-        Workspace_ = ('Environment/Gazebo/Workspace', 'C2234')
+        Workspace_ = ('Environment/Gazebo/Workspace', 'obj1')
         WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.05)
 
     class Gym:
@@ -41,20 +41,20 @@ class Training:
 class Testing:
     DetachAgent = False
     NoiseEnabled = False
-    MaxEpoches = 50
+    MaxEpoches = 100
     MaxIterations = 10000
 
 class Evaluator:
     SaveDir = 'evaluators'
     FigureDir = 'figures'
-    EpochWindowSize_ = ('Evaluator/EpochWindowSize', 20)
+    EpochWindowSize_ = ('Evaluator/EpochWindowSize', 40)
     MinSaveStepInterval_ = ('Evaluator/MinSaveStepInterval', 1000)
 
     class Figure:
         DPI_ = ('Evaluator/Figure/DPI', 300)
         Height_ = ('Evaluator/Figure/Height', 5)
         Width_ = ('Evaluator/Figure/Width', 9)
-        MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 10)
+        MaxSaveEpochInterval_ = ('Evaluator/Figure/MaxSaveEpochInterval', 20)
 
 class Model:
     InitialWeight_ = ('Model/InitialWeight', 0.03)
@@ -82,9 +82,9 @@ class Agent:
         K_ = ('Agent/HER/K', 2)
 
     class PER:
-        Enabled_ = ('Agent/PER/Enabled', False)
+        Enabled_ = ('Agent/PER/Enabled', True)
         Alpha_ = ('Agent/PER/Alpha', 0.8)
-        K_ = ('Agent/PER/K', 0.01)
+        K_ = ('Agent/PER/K', 0.0001)
 
     class SAC:
         AutoEntropyTuning_ = ('Agent/SAC/AutoEntropyTuning', True)
@@ -96,7 +96,7 @@ class Workspace:
 
 class ArtificialPotentialField:
     Eta_ = ('ArtificialPotentialField/Eta', 1.0)
-    SampleCount_ = ('ArtificialPotentialField/SampleCount', 200)
+    SampleCount_ = ('ArtificialPotentialField/SampleCount', 50)
     MaxStep_ = ('ArtificialPotentialField/MaxStep', 0.1)
     Zeta_ = ('ArtificialPotentialField/Zeta', 10.0)
 

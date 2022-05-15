@@ -84,6 +84,10 @@ class Gazebo(Simulator):
                 geo.Box(np.array([ 0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
                 geo.Box(np.array([-0.701,  0.701, 2]), np.array([0.302, 0.302, 4])),
                 geo.Box(np.array([-0.701, -0.701, 2]), np.array([0.302, 0.302, 4])),
+                geo.Box(np.array([ 0.3,  0.3, 0.8]), np.array([0.15, 0.15, 0.15])),
+                geo.Box(np.array([ 0.3, -0.3, 0.8]), np.array([0.15, 0.15, 0.15])),
+                geo.Box(np.array([-0.3,  0.3, 0.8]), np.array([0.15, 0.15, 0.15])),
+                geo.Box(np.array([-0.3, -0.3, 0.8]), np.array([0.15, 0.15, 0.15])),
             ]
             joint_low = self.robot.joint_limits[0]
             joint_high = self.robot.joint_limits[1]

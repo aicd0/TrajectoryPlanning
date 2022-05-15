@@ -7,6 +7,7 @@ elif __target == 'a_star_static': from . import a_star_static as target
 elif __target == 'apf_rect': from . import apf_rect as target
 elif __target == 'apf_static': from . import apf_static as target
 elif __target == 'debug': from . import debug as target
+elif __target == 'plot': from . import plot as target
 elif __target == 'rl_rect': from . import rl_rect as target
 elif __target == 'rl_static': from . import rl_static as target
 elif __target == 'rl_train': from . import rl_train as target

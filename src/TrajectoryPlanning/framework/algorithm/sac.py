@@ -54,8 +54,8 @@ class SAC(Agent):
         # Plots.
         self.plot_critic_loss = 'critic_loss'
         self.plot_actor_loss = 'actor_loss'
-        self.plot_manager.create_plot(self.plot_critic_loss, 'Critic Loss', 'Loss')
-        self.plot_manager.create_plot(self.plot_actor_loss, 'Actor Loss', 'Loss')
+        self.plot_manager.create_plot(self.plot_critic_loss, 'Critic Loss', 'Loss', window=20)
+        self.plot_manager.create_plot(self.plot_actor_loss, 'Actor Loss', 'Loss', window=20)
 
         if self.auto_entropy_tuning:
             self.plot_log_alpha = 'log_alpha'
@@ -77,7 +77,7 @@ class SAC(Agent):
         return (mean if deterministic else action).detach().numpy()[0]
 
     def learn(self):
-        # Sample BatchSize transitions from replay buffer for optimization.
+        # Sample a minibatch from replay buffer for optimization.
         sampled_trans = self.replay_buffer.sample(self.batchsize)
 
         # Convert to ndarray.
@@ -149,7 +149,7 @@ class SAC(Agent):
 
         # [optional] Update transition priority.
         if self.configs.get(config.Agent.PER.Enabled_):
-            priorities = critic_loss_val
+            priorities = torch.abs(q1 - q) + torch.abs(q2 - q)
             priorities **= self.configs.get(config.Agent.PER.Alpha_)
             priorities *= self.configs.get(config.Agent.PER.K_)
             for i in range(len(sampled_trans)):

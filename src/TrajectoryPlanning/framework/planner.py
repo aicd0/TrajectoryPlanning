@@ -11,12 +11,15 @@ class Planner:
         self.sim = sim
         self.plot = plot
         self.stopwatch = Stopwatch()
+        self.span = None
+        self.steps = None
 
     def reach(self, position: np.ndarray, verbose=False) -> bool:
         track = self._plan(position)
         success = True
-        steps = 0
         d_window = []
+        self.span = 0
+        self.steps = 0
 
         self.stopwatch.reset()
         self.stopwatch.start()
@@ -24,8 +27,7 @@ class Planner:
             self.stopwatch.pause()
 
             # Exceeds max steps.
-            steps += 1
-            if steps > 150:
+            if self.steps > 300:
                 success = False
                 break
 
@@ -59,11 +61,11 @@ class Planner:
             if d > 0.5:
                 success = False
         if verbose:
-            span = self.stopwatch.span()
+            self.span = self.stopwatch.span()
             result = 'completed' if success else 'failed'
             error = utils.math.distance(self.sim.state().achieved, position)
             utils.print.put('Task %s. Steps=%d. Error=%f. Time used: %fs'
-                % (result, steps, error, span))
+                % (result, self.steps, error, self.span))
         return success
 
     @abstractmethod
@@ -73,6 +75,7 @@ class Planner:
     def __simple_act(self, action: np.ndarray) -> bool:
         while True:
             state = self.sim.step(action / self.sim.action_amp)
+            self.steps += 1
             if self.plot:
                 self.sim.plot_step()
             if state.collision:

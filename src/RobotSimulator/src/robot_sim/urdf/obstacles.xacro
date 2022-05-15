@@ -192,4 +192,152 @@
     <material>Gazebo/White</material>
   </gazebo>
 
+  <!-- Obj 5 -->
+  <!-- <joint name="obj5_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj5"/>
+    <origin xyz="0.3 0.3 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <link name="obj5">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj5">
+    <material>Gazebo/White</material>
+  </gazebo> -->
+
+  <!-- Obj 6 -->
+  <!-- <joint name="obj6_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj6"/>
+    <origin xyz="0.3 -0.3 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <link name="obj6">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj6">
+    <material>Gazebo/White</material>
+  </gazebo> -->
+
+  <!-- Obj 7 -->
+  <!-- <joint name="obj7_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj7"/>
+    <origin xyz="-0.3 0.3 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <link name="obj7">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj7">
+    <material>Gazebo/White</material>
+  </gazebo> -->
+
+  <!-- Obj 8 -->
+  <!-- <joint name="obj8_joint" type="fixed">
+    <parent link="world"/>
+    <child link="obj8"/>
+    <origin xyz="-0.3 -0.3 0.8" rpy="0 0 0"/>
+  </joint>
+
+  <link name="obj8">
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+    </collision>
+
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+	      <box size="0.15 0.15 0.15"/>
+      </geometry>
+      <material name="white"/>
+    </visual>
+
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="1.0"/>
+      <inertia
+        ixx="1.0" ixy="0.0" ixz="0.0"
+        iyy="1.0" iyz="0.0"
+        izz="1.0"/>
+    </inertial>
+  </link>
+
+  <gazebo reference="obj8">
+    <material>Gazebo/White</material>
+  </gazebo> -->
+
 </robot>

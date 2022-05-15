@@ -20,11 +20,11 @@ class Node:
         return self.from_start + self.to_finish
 
 def bidirectional_a_star(workspace: Workspace, joint_position: np.ndarray,
-                         target_pos: np.ndarray) -> list[np.ndarray] | None:
+                         target_position: np.ndarray) -> list[np.ndarray] | None:
     '''Bidirectional A* implementation.'''
     start_wsnodes = set([workspace.nearest_node_from_joint_position_2(joint_position)])
     assert len(start_wsnodes) > 0
-    finish_wsnodes = workspace.nearest_nodes_from_position_2(target_pos, max_d=0.05)
+    finish_wsnodes = workspace.nearest_nodes_from_position_2(target_position, max_d=0.05)
     assert len(finish_wsnodes) > 0
 
     estimator = lambda nfrom, nto: min([utils.math.distance(
@@ -75,7 +75,6 @@ def bidirectional_a_star(workspace: Workspace, joint_position: np.ndarray,
             if in_backward:
                 backward_nodes.add(neighbour)
 
-        
         # Get the least cost node from backward list to remove.
         opt_node: Node = backward_nodes.pop(0)
         opt_node.closed = True
