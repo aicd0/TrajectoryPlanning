@@ -14,7 +14,7 @@ class UserPlanner1(Planner):
         state = self.sim.reset()
         dim_action = self.sim.dim_action()
         dim_state = state.dim_state()
-        self.agent = create_agent('sac', 'sac/l4', dim_state, dim_action, name='rl')
+        self.agent = create_agent('sac', 'sac/h3', dim_state, dim_action, name='rl')
         self.agent.load(enable_learning=False)
     
     def _plan(self, position: np.ndarray) -> list[np.ndarray] | None:

@@ -26,6 +26,7 @@ class SAC(Agent):
         self.lr_alpha = self.configs.get(config.Agent.SAC.LRAlpha_)
         self.lr_actor = self.configs.get(config.Agent.LRActor_)
         self.lr_critic = self.configs.get(config.Agent.LRCritic_)
+        self.per_enabled = self.configs.get(config.Agent.PER.Enabled_)
         self.tau = self.configs.get(config.Agent.Tau_)
 
         # Initialize models.
@@ -148,7 +149,7 @@ class SAC(Agent):
         utils.math.soft_update(self.q2_targ, self.q2, self.tau)
 
         # [optional] Update transition priority.
-        if self.configs.get(config.Agent.PER.Enabled_):
+        if self.per_enabled:
             priorities = torch.abs(q1 - q) + torch.abs(q2 - q)
             priorities **= self.configs.get(config.Agent.PER.Alpha_)
             priorities *= self.configs.get(config.Agent.PER.K_)

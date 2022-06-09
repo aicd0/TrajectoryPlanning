@@ -93,6 +93,7 @@ class ArtificialPotentialFieldPlanner(Planner):
                     points = robot.collision_points(node.joint_position)
                     pb = potential_b(points, workspace.obstacles)
                     workspace.set_meta('potential', node, pb)
+                    workspace_changed = True
             if workspace_changed:
                 workspace.save()
     

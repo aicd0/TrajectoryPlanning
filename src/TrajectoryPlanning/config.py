@@ -3,7 +3,7 @@ import torch
 from utils.string_utils import to_folder_path as todir
 
 class Common:
-    ProjectDir = 'ablation_study/sac_g99_k2_per'
+    ProjectDir = 'main'
     ConfigDir = 'configs'
     Target_ = ('Common/Target', 'debug')
 
@@ -20,7 +20,7 @@ class Environment:
         ActionAmp_ = ('Environment/Gazebo/ActionAmp', 0.1)
         MaxSteps_ = ('Environment/Gazebo/MaxSteps', 150)
         StepIterations_ = ('Environment/Gazebo/StepIterations', 50) # make sure corresponding to sensor frequency
-        Workspace_ = ('Environment/Gazebo/Workspace', 'obj1')
+        Workspace_ = ('Environment/Gazebo/Workspace', 'ws1')
         WorkspaceMinR_ = ('Environment/Gazebo/WorkspaceMinR', 0.05)
 
     class Gym:

@@ -1,4 +1,3 @@
-from cv2 import mean
 import config
 import torch
 import torch.nn.functional as F
@@ -23,19 +22,15 @@ class Actor (nn.Module):
         self.fc3 = nn.Linear(h2, h3)
         self.fc3.weight.data = fanin_init(self.fc3.weight.data.size())
 
-        self.mean = nn.Linear(h3, dim_action)
-        self.mean.weight.data.uniform_(-w, w)
-        
-        self.log_std = nn.Linear(h3, dim_action)
-        self.log_std.weight.data.uniform_(-w, w)
+        self.out = nn.Linear(h3, dim_action)
+        self.out.weight.data.uniform_(-w, w)
 
     def forward(self, states):
         x = F.relu(self.fc1(states))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        mean = self.mean(x)
-        log_std = self.log_std(x)
-        return mean, log_std
+        x = torch.tanh(self.out(x))
+        return x
 
 class Critic (nn.Module):
     def __init__(self, dim_state, dim_action):
@@ -54,13 +49,13 @@ class Critic (nn.Module):
         self.fc3 = nn.Linear(h2, h3)
         self.fc3.weight.data = fanin_init(self.fc3.weight.data.size())
 
-        self.fc4 = nn.Linear(h3, 1)
-        self.fc4.weight.data.uniform_(-w, w)
+        self.out = nn.Linear(h3, 1)
+        self.out.weight.data.uniform_(-w, w)
 
     def forward(self, states, actions):
         x = torch.cat((states, actions), 1)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = F.relu(self.fc3(x))
-        x = self.fc4(x)
+        x = self.out(x)
         return x

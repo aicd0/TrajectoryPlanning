@@ -4,7 +4,6 @@ import utils.math
 from .state import GazeboState
 from envs.reward import Reward
 from framework.configuration import global_configs as configs
-from framework.geometry import Geometry
 from framework.robot import Robot
 from framework.workspace import Workspace
 from math import exp
